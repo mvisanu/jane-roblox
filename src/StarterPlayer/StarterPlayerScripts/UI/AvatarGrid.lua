@@ -6,40 +6,11 @@ local HudLayout = require(Shared:WaitForChild("HudLayout"))
 
 local AvatarGrid = {}
 
-local function hex(color)
-	return string.format(
-		"#%02X%02X%02X",
-		math.floor(color.R * 255 + 0.5),
-		math.floor(color.G * 255 + 0.5),
-		math.floor(color.B * 255 + 0.5)
-	)
-end
-
-local function addPaletteStrip(card, palette, components)
-	local strip = Instance.new("Frame")
-	strip.Name = "RealColorSwatches"
-	strip.BackgroundTransparency = 1
-	strip.Position = UDim2.fromOffset(6, HudLayout.AVATAR_PREVIEW_HEIGHT - 11)
-	strip.Size = UDim2.fromOffset(66, 17)
-	strip.ZIndex = 4
-	strip.Parent = card
-	for index, color in ipairs({ palette.Primary, palette.Secondary, palette.Accent }) do
-		local swatch = Instance.new("Frame")
-		swatch.Name = "Swatch" .. index
-		swatch.BackgroundColor3 = color
-		swatch.Position = UDim2.fromOffset((index - 1) * 21, 0)
-		swatch.Size = UDim2.fromOffset(19, 17)
-		swatch.ZIndex = 5
-		swatch.Parent = strip
-		components.corner(swatch, UDim.new(0, 4))
-		components.stroke(swatch, Color3.fromRGB(255, 255, 255), 1, 0.15)
-	end
-end
-
 local function addPreview(card, avatarId, outfit)
 	local preview = Instance.new("ViewportFrame")
 	preview.Name = avatarId .. "3DPreview"
-	preview.BackgroundColor3 = outfit.Palette.Light:Lerp(outfit.Palette.Secondary, 0.76)
+	-- The approved sheet uses one warm neutral studio, not six tinted cards.
+	preview.BackgroundColor3 = Color3.fromRGB(238, 235, 231)
 	preview.BorderSizePixel = 0
 	preview.ClipsDescendants = true
 	preview.Size = UDim2.new(1, 0, 0, HudLayout.AVATAR_PREVIEW_HEIGHT)
@@ -50,7 +21,7 @@ local function addPreview(card, avatarId, outfit)
 
 	local camera = Instance.new("Camera")
 	camera.Name = "AvatarPreviewCamera"
-	camera.FieldOfView = 30
+	camera.FieldOfView = 28
 	camera.CFrame = AvatarModels.PreviewCameraCFrame
 	camera.Parent = preview
 	preview.CurrentCamera = camera
@@ -64,11 +35,12 @@ local function addPreview(card, avatarId, outfit)
 	ground.Name = "PreviewGround"
 	ground.Anchored = true
 	ground.CanCollide = false
-	ground.Color = outfit.Palette.Deep
+	ground.Color = Color3.fromRGB(83, 78, 72)
 	ground.Material = Enum.Material.SmoothPlastic
-	ground.Size = Vector3.new(4.2, 0.08, 3.1)
-	ground.CFrame = CFrame.new(0, -0.42, 0)
-	ground.Transparency = 0.35
+	ground.Shape = Enum.PartType.Cylinder
+	ground.Size = Vector3.new(0.08, 3.5, 3.5)
+	ground.CFrame = CFrame.new(0, -0.42, 0) * CFrame.Angles(0, 0, math.rad(90))
+	ground.Transparency = 0.72
 	ground.Parent = world
 	return preview
 end
@@ -90,11 +62,10 @@ local function addCard(row, index, avatarId, equippedId, theme, components, bili
 	components.stroke(card, selected and outfit.Palette.Accent or theme.Colors.Border, selected and 4 or 2, 0)
 
 	addPreview(card, avatarId, outfit)
-	addPaletteStrip(card, outfit.Palette, components)
 
 	local label = components.label(
 		card,
-		bilingual(outfit.DisplayName .. "  " .. hex(outfit.Palette.Primary), outfit.DisplayNameThai),
+		bilingual(outfit.DisplayName, outfit.DisplayNameThai),
 		UDim2.new(1, -10, 0, HudLayout.AVATAR_CARD_HEIGHT - HudLayout.AVATAR_PREVIEW_HEIGHT - 5),
 		UDim2.fromOffset(5, HudLayout.AVATAR_PREVIEW_HEIGHT + 3),
 		11,

@@ -48,6 +48,29 @@ def make_character(lua):
     return character
 
 
+def make_r15_character(lua):
+    instance, vector3, cframe = lua.globals().Instance, lua.globals().Vector3, lua.globals().CFrame
+    character = instance.new("Model")
+    parts = {
+        "UpperTorso": ((2, 1.6, 1), (0, 3.2, 0)),
+        "LowerTorso": ((1.8, 0.4, 1), (0, 2.2, 0)),
+        "Head": ((2, 1, 1), (0, 4.6, 0)),
+        "LeftUpperArm": ((1, 1.2, 1), (-1.5, 3.25, 0)),
+        "RightUpperArm": ((1, 1.2, 1), (1.5, 3.25, 0)),
+        "LeftUpperLeg": ((1, 1.2, 1), (-0.5, 1.6, 0)),
+        "RightUpperLeg": ((1, 1.2, 1), (0.5, 1.6, 0)),
+    }
+    for name, (size, position) in parts.items():
+        part = instance.new("Part")
+        part.Name = name
+        part.Size = vector3.new(*size)
+        part.CFrame = cframe.new(*position)
+        part.Parent = character
+        if name == "UpperTorso":
+            character.PrimaryPart = part
+    return character
+
+
 def main() -> int:
     lua, modules, data, game, player, _toasts = boot()
     catalog = modules["Catalog"]
@@ -69,12 +92,30 @@ def main() -> int:
 
     expected_gender = {avatar_id: ("Male" if index < 3 else "Female") for index, avatar_id in enumerate(expected_order)}
     expected_visuals = {
-        "MaleTrailRanger": {"TrailScarf", "TrailMapPouch", "LeftFernPatch"},
-        "MaleRiverWarden": {"RiverMantle", "LanternFrame", "LanternGlow"},
-        "MaleAutumnArcher": {"AutumnScarf", "CompactQuiver", "BowUpper"},
-        "FemaleWildflowerBotanist": {"BotanistApron", "FlowerSatchel", "HairFlower1"},
-        "FemaleFernGuardian": {"FernBreastplate", "FernRoundShield", "LeftShoulderArmor"},
-        "FemalePineScout": {"PineHoodTop", "CompactFieldPack", "FieldNotebook"},
+        "MaleTrailRanger": {
+            "HairSpike1", "TrailScarfKnot", "TrailChestPocket", "TrailMapPouch",
+            "TrailMapLine1", "LeftSleeveFernStem", "LeftTrouserFernStem", "LeftCargoPocket",
+        },
+        "MaleRiverWarden": {
+            "SideSweptFringe1", "RiverMantle", "RiverBrooch", "RiverMantleFernStem",
+            "RiverCoatLeftPanel", "RiverTassel1", "LanternFrame", "LanternRail1",
+        },
+        "MaleAutumnArcher": {
+            "AutumnCrownSpike", "AutumnScarfFold", "ArcherSecondStrap", "ArcherLeftPouch",
+            "AutumnPointedHem1", "CompactQuiver", "BowUpper", "BowString",
+        },
+        "FemaleWildflowerBotanist": {
+            "LongWavyHairBack", "LeftWavyLock1", "BotanistLeftCollar", "BotanistApron",
+            "BotanistTool1", "ApronFernStem", "FlowerSatchel", "RightHairFlower1",
+        },
+        "FemaleFernGuardian": {
+            "GuardianHairBunTop", "LeftGuardianBraid1", "GuardianNeckWrap", "GuardianChestFernStem",
+            "LeftShoulderArmor", "LeftGuardianGauntlet", "ShieldRim", "ShieldFernStem",
+        },
+        "FemalePineScout": {
+            "ScoutBraid1", "PineHoodPeak", "HoodLeafPinStem", "PineLeftBeltPouch",
+            "CompactFieldPack", "FieldNotebook", "LeftTrouserPatch", "LeftBootLace1",
+        },
     }
     expected_primary = {
         "MaleTrailRanger": (77, 88, 52),
@@ -127,6 +168,9 @@ def main() -> int:
             failures.append(f"{avatar_id} is missing approved details: {', '.join(missing)}")
         if any("Chibi" in name or "Cape" in name or "Backpack" in name for name in names):
             failures.append(f"{avatar_id} still contains a rejected chibi/cape/backpack piece")
+        visible_parts = [child for child in children if child.IsA(child, "BasePart")]
+        if len(visible_parts) < 55:
+            failures.append(f"{avatar_id} has only {len(visible_parts)} visual pieces; approved clothing detail is incomplete")
         for child in children:
             if child.IsA(child, "BasePart") and max(child.Size.X, child.Size.Y, child.Size.Z) > 2.6:
                 failures.append(f"{avatar_id} contains oversized piece {child.Name}")
@@ -140,6 +184,20 @@ def main() -> int:
         preview_visual = preview and preview.FindFirstChild(preview, "ApprovedWoodlandAvatar")
         if not preview_visual or preview_visual.GetAttribute(preview_visual, "AvatarStyle") != avatar_id:
             failures.append(f"{avatar_id} preview does not use the approved live builder")
+
+    # R15 players still receive the exact classic block silhouette shown in the
+    # sheet, rather than a stretched/segmented version of their personal rig.
+    r15 = make_r15_character(lua)
+    r15_visual = avatar_models.Apply(r15, "MaleRiverWarden")
+    r15_names = {child.Name for child in values(r15_visual.GetChildren(r15_visual))} if r15_visual else set()
+    for name in ("BlockTorso", "LeftBlockSleeve", "RightBlockHand", "LeftBlockTrouser", "RightBlockBoot"):
+        if name not in r15_names:
+            failures.append(f"R15 compatibility shell is missing classic piece {name}")
+    if "BlockUpperTorso" in r15_names or "BlockLowerTorso" in r15_names:
+        failures.append("R15 body segmentation leaks into the approved classic silhouette")
+    anchor = r15_visual and r15_visual.FindFirstChild(r15_visual, "StyleTorsoAnchor")
+    if not anchor or anchor.Transparency != 1:
+        failures.append("R15 clothing details do not share the invisible classic-torso anchor")
 
     # Fresh and migrated profiles must begin with the player's untouched Roblox
     # appearance, then switch and reset through the public server action.
@@ -182,6 +240,16 @@ def main() -> int:
     for contract in ('gender .. "AvatarGroup"', 'addGenderGroup(grid, "Male"', 'addGenderGroup(grid, "Female"', "MALE AVATARS", "FEMALE AVATARS", "UIGridLayout"):
         if contract not in grid_source:
             failures.append(f"gender-separated 3x2 grid is missing {contract}")
+    for contract in (
+        "Color3.fromRGB(238, 235, 231)",
+        "camera.FieldOfView = 28",
+        "ground.Shape = Enum.PartType.Cylinder",
+        "ground.Transparency = 0.72",
+    ):
+        if contract not in grid_source:
+            failures.append(f"approved neutral studio preview is missing {contract}")
+    if "RealColorSwatches" in grid_source or "outfit.Palette.Light:Lerp" in grid_source:
+        failures.append("selection preview still overlays swatches or per-avatar tinted backgrounds absent from the approved sheet")
     if 'Equipped = "Original"' not in data_source:
         failures.append("profile template does not start with the original Roblox avatar")
 

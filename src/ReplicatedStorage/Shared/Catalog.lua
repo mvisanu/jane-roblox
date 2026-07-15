@@ -5,7 +5,8 @@ local WORLD = WildwoodStyle.World
 local PETS = WildwoodStyle.Pets
 local AVATARS = WildwoodStyle.Avatars
 local Catalog = {}
-local SKIN = Color3.fromRGB(255, 224, 189)
+-- Median lit face tone sampled from the approved six-character render.
+local SKIN = Color3.fromRGB(238, 183, 123)
 
 Catalog.Seeds = {
 	Daisy = { DisplayName = "Daisy", DisplayNameThai = "เดซี่", GrowSeconds = 20, SellPrice = 30, Color = WORLD.Flower },

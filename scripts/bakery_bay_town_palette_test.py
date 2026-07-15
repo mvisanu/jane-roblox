@@ -127,7 +127,7 @@ def main() -> int:
         WORLD_SERVICE: [(255, 224, 189), (255, 224, 189)],  # cafe guest character skin
         SHARED / "CafeModels.lua": [],
         SHARED / "Config.lua": [],
-        SHARED / "Catalog.lua": [(255, 224, 189)],  # centralized character skin
+        SHARED / "Catalog.lua": [(238, 183, 123)],  # approved character-sheet skin
         SHARED / "Furniture.lua": [
             (110, 120, 126),
             (46, 116, 181),
@@ -175,7 +175,7 @@ def main() -> int:
     catalog_source = (SHARED / "Catalog.lua").read_text(encoding="utf-8")
     if (
         "Catalog.Outfits = {" not in catalog_source
-        or "local SKIN = Color3.fromRGB(255, 224, 189)" not in catalog_source
+        or "local SKIN = Color3.fromRGB(238, 183, 123)" not in catalog_source
         or catalog_source.count("Arms = SKIN") != 6
         or "WildwoodStyle.Avatars = {" not in style_source
     ):
