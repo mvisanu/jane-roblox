@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wildwood Assets - Architecture Reference</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Quicksand:wght@500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&family=Quicksand:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-bright": "#fff8f0",
+                    "outline-variant": "#c3c8bd",
+                    "on-tertiary-fixed-variant": "#753400",
+                    "secondary-container": "#f0deb3",
+                    "surface-container-low": "#fff3d8",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-fixed": "#321200",
+                    "error-container": "#ffdad6",
+                    "surface-container-highest": "#f3e1b3",
+                    "on-tertiary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "surface-dim": "#ebd9ab",
+                    "secondary-fixed": "#f3e1b6",
+                    "on-error": "#ffffff",
+                    "on-surface-variant": "#434840",
+                    "on-secondary": "#ffffff",
+                    "on-background": "#231b00",
+                    "tertiary": "#7d3802",
+                    "tertiary-fixed": "#ffdbc9",
+                    "tertiary-fixed-dim": "#ffb68c",
+                    "on-primary-container": "#caeabb",
+                    "on-secondary-fixed": "#231a02",
+                    "on-tertiary-container": "#ffdac6",
+                    "primary-fixed-dim": "#b0d0a2",
+                    "surface": "#fff8f0",
+                    "tertiary-container": "#9b4f1b",
+                    "on-secondary-container": "#6f613f",
+                    "on-primary-fixed": "#082104",
+                    "on-surface": "#231b00",
+                    "primary-container": "#4f6b45",
+                    "on-primary-fixed-variant": "#334d2a",
+                    "outline": "#74796f",
+                    "surface-container": "#ffedbe",
+                    "surface-variant": "#f3e1b3",
+                    "secondary": "#6a5d3b",
+                    "inverse-primary": "#b0d0a2",
+                    "surface-tint": "#4a6640",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed-dim": "#d6c59c",
+                    "inverse-on-surface": "#fff0cb",
+                    "background": "#fff8f0",
+                    "primary": "#38532f",
+                    "inverse-surface": "#3a2f0f",
+                    "primary-fixed": "#cbecbc",
+                    "on-secondary-fixed-variant": "#514626",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-high": "#f9e7b8",
+                    "brand-earth": "#6B5E3C",
+                    "brand-orange": "#D98048"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "unit": "8px",
+                    "margin-tablet": "32px",
+                    "margin-desktop": "48px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Quicksand"],
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Quicksand"],
+                    "label-sm": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "label-lg": ["14px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.5", "fontWeight": "600"}],
+                    "headline-sm": ["22px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "headline-md": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "500"}],
+                    "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #fff8f0;
+            color: #231b00;
+            font-family: 'Quicksand', sans-serif;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .wood-border {
+            border-bottom: 3px solid #6B5E3C;
+        }
+        .skeuomorphic-card {
+            background: #fff8f0;
+            box-shadow: 0 10px 25px -5px rgba(74, 63, 41, 0.15), 0 8px 10px -6px rgba(74, 63, 41, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .skeuomorphic-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: url('https://www.transparenttextures.com/patterns/paper-fibers.png');
+            opacity: 0.05;
+        }
+        .magic-glow:hover {
+            box-shadow: 0 0 20px rgba(217, 128, 72, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface-container-high shadow-md flex justify-between items-center w-full px-margin-desktop h-24 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-4xl" style="font-variation-settings: 'FILL' 1;">park</span>
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary tracking-tight">Wildwood Assets</h1>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-on-surface-variant opacity-80 font-label-lg text-label-lg hover:bg-surface-container-highest transition-colors px-4 py-2 rounded-lg" href="#">Characters</a>
+<a class="text-on-surface-variant opacity-80 font-label-lg text-label-lg hover:bg-surface-container-highest transition-colors px-4 py-2 rounded-lg" href="#">Animals</a>
+<a class="text-primary font-bold border-b-4 border-primary font-label-lg text-label-lg px-4 py-2" href="#">Architecture</a>
+<a class="text-on-surface-variant opacity-80 font-label-lg text-label-lg hover:bg-surface-container-highest transition-colors px-4 py-2 rounded-lg" href="#">Environment</a>
+</nav>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold wood-border active:scale-95 transition-all">
+            Download All
+        </button>
+</header>
+<div class="flex flex-1 relative">
+<!-- NavigationDrawer (Desktop Only) -->
+<aside class="hidden lg:flex fixed left-0 top-24 h-[calc(100vh-6rem)] w-80 bg-surface-container-low border-r-2 border-outline-variant flex-col pt-8 z-40">
+<div class="px-8 mb-6">
+<h2 class="text-headline-sm font-headline-sm text-tertiary">Asset Categories</h2>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-4 py-3 px-10 text-on-surface-variant hover:bg-surface-variant transition-all duration-300" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-label-lg font-label-lg">Characters</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-10 text-on-surface-variant hover:bg-surface-variant transition-all duration-300" href="#">
+<span class="material-symbols-outlined">pets</span>
+<span class="text-label-lg font-label-lg">Animals</span>
+</a>
+<a class="bg-secondary-container text-on-secondary-container rounded-full mx-4 py-3 px-6 font-bold shadow-sm flex items-center gap-4 translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-label-lg font-label-lg">Architecture</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-10 text-on-surface-variant hover:bg-surface-variant transition-all duration-300" href="#">
+<span class="material-symbols-outlined">forest</span>
+<span class="text-label-lg font-label-lg">Environment</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 lg:ml-80 p-margin-mobile md:p-margin-desktop mb-24 lg:mb-0">
+<!-- Hero / Title Section -->
+<section class="mb-12">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<span class="text-brand-orange font-bold uppercase tracking-widest text-sm">Asset Reference Sheet</span>
+<h2 class="text-headline-lg font-headline-lg text-on-background mt-2">Architecture Vol. 01</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant mt-4 max-w-2xl">
+                            A curated set of woodland buildings featuring heavy timber frames, glowing amber lanterns, and weathered shingle details for a cohesive low-poly aesthetic.
+                        </p>
+</div>
+<div class="flex gap-4">
+<div class="bg-surface-container px-4 py-2 rounded-xl flex items-center gap-2">
+<span class="w-4 h-4 rounded-full bg-brand-earth"></span>
+<span class="text-label-sm font-label-sm">Earth Brown</span>
+</div>
+<div class="bg-surface-container px-4 py-2 rounded-xl flex items-center gap-2">
+<span class="w-4 h-4 rounded-full bg-brand-orange"></span>
+<span class="text-label-sm font-label-sm">Muted Orange</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Grid of Architecture -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8 mb-12">
+<!-- Adventure Guild (The Big Anchor) -->
+<article class="md:col-span-8 skeuomorphic-card rounded-3xl p-6 flex flex-col gap-6 magic-glow transition-all">
+<div class="relative h-96 rounded-2xl overflow-hidden group">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A grand three-story Adventure Guild building in a low-poly Roblox style. It features heavy dark earth brown timber frames, a steep roof with detailed wooden shingles, and several glowing orange lanterns hanging from the eaves. The atmosphere is warm and welcoming, set in a dense pine forest at sunset with soft golden light filtering through the trees." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8yshmiJWEm9Vm1HwshA81RxlfzRxMXm99i_9RcPHS8LJ2KGcPWvfknLiL_uotLyVIQcsI0rGIM5Wmax1jKP1O36x82nxHK62lNk6ULRUqKNgjjPuAGUVuIf4vE1-ZD6U8TDwFVa8jBkOGgqILZXT76aHZDKUQZFFEA2yFxIf0xxc0tC8Vdznd3b85J7hVd7fxLFJe7MS7apBjhORlSoP--6b9ThXCTKeSa59Qb79poKjAF0YSSFhp3qBOu1K663zocqny7WZn7cTH"/>
+<div class="absolute top-4 left-4 bg-primary/90 text-white px-4 py-1 rounded-full text-label-sm backdrop-blur-sm">Main Hub</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<h3 class="text-headline-sm font-headline-sm text-on-background">Adventure Guild</h3>
+<span class="text-brand-orange font-bold">12,450 Poly</span>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant">The primary social hub. Includes a grand hall, quest board balcony, and reinforced stone foundation. Ideal for central town squares.</p>
+<div class="flex gap-2 mt-2">
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-lg text-label-sm">Large Scale</span>
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-lg text-label-sm">Interactive Doors</span>
+</div>
+</div>
+</article>
+<!-- Materials List (Sidebar in Bento) -->
+<aside class="md:col-span-4 bg-surface-container-low border-2 border-outline-variant rounded-3xl p-8 shadow-inner">
+<h3 class="text-headline-sm font-headline-sm text-tertiary mb-6 flex items-center gap-3">
+<span class="material-symbols-outlined">inventory_2</span>
+                        Materials List
+                    </h3>
+<ul class="space-y-4">
+<li class="flex items-center gap-4 bg-surface-bright p-3 rounded-xl border border-outline-variant">
+<div class="w-12 h-12 bg-brand-earth rounded-lg flex-shrink-0"></div>
+<div>
+<p class="font-bold text-on-surface">Weathered Timber</p>
+<p class="text-xs text-on-surface-variant">Used for main skeletons</p>
+</div>
+</li>
+<li class="flex items-center gap-4 bg-surface-bright p-3 rounded-xl border border-outline-variant">
+<div class="w-12 h-12 bg-[#8c7e6a] rounded-lg flex-shrink-0"></div>
+<div>
+<p class="font-bold text-on-surface">Hand-Cut Shingles</p>
+<p class="text-xs text-on-surface-variant">Multi-layered roof detail</p>
+</div>
+</li>
+<li class="flex items-center gap-4 bg-surface-bright p-3 rounded-xl border border-outline-variant">
+<div class="w-12 h-12 bg-brand-orange rounded-lg flex-shrink-0"></div>
+<div>
+<p class="font-bold text-on-surface">Amber Glass</p>
+<p class="text-xs text-on-surface-variant">Neon-emissive lantern panes</p>
+</div>
+</li>
+<li class="flex items-center gap-4 bg-surface-bright p-3 rounded-xl border border-outline-variant">
+<div class="w-12 h-12 bg-[#e8e4d9] rounded-lg flex-shrink-0"></div>
+<div>
+<p class="font-bold text-on-surface">Parchment Windows</p>
+<p class="text-xs text-on-surface-variant">Subtle translucency effect</p>
+</div>
+</li>
+</ul>
+<button class="w-full mt-8 bg-brand-earth text-white py-4 rounded-xl font-bold wood-border flex justify-center items-center gap-2 hover:bg-opacity-90 transition-all">
+<span class="material-symbols-outlined">download</span>
+                        Export Material Palette
+                    </button>
+</aside>
+<!-- Wildwood Cafe (Medium Card) -->
+<article class="md:col-span-6 skeuomorphic-card rounded-3xl p-6 flex flex-col gap-4 magic-glow transition-all">
+<div class="h-64 rounded-2xl overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A cozy Wildwood Cafe in a stylized Roblox environment. The building is smaller and more intimate than a guild hall, featuring an outdoor deck with wooden chairs. It has a distinctive orange awning made of canvas, a stone fireplace chimney, and warm amber light spilling from the windows into the surrounding grassy meadow." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoI3TFifV5FMqyPZJg6KGrmSsLALvhLvQJXOAacavpy1Sji9WaUp1mJ06RTaT9mmvLCmi9vE1Y-9HNdZgX5Djl0egOwj3OwborFoGDM-urLG5etyWyWP8LmXhCWn87XpzMdL-V5aHAiE6p2Qt_avzc12hI6Axs_yM00jziW9KmV2grFLPPlIsSMIYH310voNFeaPVP8ANNinwnQr7FT3dTlZBHPTCHtKzZD_eYa_a4Fgwm49uEqYY3YYAgOII9HHLclvZk6hqPRHvf"/>
+</div>
+<div class="flex flex-col gap-1">
+<h3 class="text-headline-sm font-headline-sm text-on-background">Wildwood Cafe</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">A quaint eatery with an emphasis on outdoor seating and vine-covered walls. Includes interior furnishing kit.</p>
+<div class="mt-4 flex justify-between items-center">
+<span class="text-label-sm font-label-sm bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full">Medium Asset</span>
+<button class="text-primary font-bold flex items-center gap-1 hover:underline">
+                                View Blueprint <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Cozy Home (Medium Card) -->
+<article class="md:col-span-6 skeuomorphic-card rounded-3xl p-6 flex flex-col gap-4 magic-glow transition-all">
+<div class="h-64 rounded-2xl overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A standard Cozy Home architectural asset for a Roblox game. This house is compact and charming, with a slightly asymmetrical roof and a circular attic window. It prominently features a heavy timber-frame structure with earthy brown wood and a small garden patch with pumpkins out front. The lighting is soft and ambient." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpG2DFThmnuQGCLt5VOecfzb4hS2eje_puQkIS99rSADzUrklmtgCjdw8wSUNwsbbeO4-05T3fX2pbF_Fpjecvi-2N20qeU1EYV2rkZ0MAh4W054w8BMCepXxeGQLO6gmLthoWylk6GzNs50SRfjR8pZha_IwToU-45F5nyci0BPjmU7vMwIeiQcQ8Y9SKvUnj-9EX0m4y0J5JvCES8Q1dpXdDtJahECnb91bG5aGGTAOG-vPSxpS-5mYxicuCfnA_wWZC-3baudVF"/>
+</div>
+<div class="flex flex-col gap-1">
+<h3 class="text-headline-sm font-headline-sm text-on-background">Cozy Home</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">The standard residential unit. Highly modular roof and window options for creating diverse neighborhood variations.</p>
+<div class="mt-4 flex justify-between items-center">
+<span class="text-label-sm font-label-sm bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full">Small Asset</span>
+<button class="text-primary font-bold flex items-center gap-1 hover:underline">
+                                View Blueprint <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+<!-- Detail Callouts Section -->
+<section class="bg-surface-container p-8 rounded-[2rem] mb-12">
+<div class="flex flex-col lg:flex-row gap-12 items-center">
+<div class="lg:w-1/2 space-y-6">
+<h3 class="text-headline-md font-headline-md text-primary">Construction Details</h3>
+<p class="text-body-lg font-body-lg text-on-surface-variant">
+                            All buildings in the Wildwood set use a **Unified Mesh System**. Shingles are modeled as separate geometry instances to allow for dynamic lighting and wind-flutter effects in-engine.
+                        </p>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-bright p-4 rounded-2xl border-2 border-outline-variant">
+<span class="material-symbols-outlined text-brand-orange mb-2">flare</span>
+<p class="font-bold">Luminance</p>
+<p class="text-xs">Subsurface scattering on glass</p>
+</div>
+<div class="bg-surface-bright p-4 rounded-2xl border-2 border-outline-variant">
+<span class="material-symbols-outlined text-brand-orange mb-2">grid_view</span>
+<p class="font-bold">Texture Map</p>
+<p class="text-xs">4K PBR Atlasing included</p>
+</div>
+</div>
+</div>
+<div class="lg:w-1/2 w-full h-80 rounded-3xl overflow-hidden border-4 border-brand-earth/20">
+<img class="w-full h-full object-cover" data-alt="A close-up architectural detail shot of the timber-frame construction. The image shows the interlocking wooden joints and the texture of the shingles under warm sunset lighting. Small orange lanterns are shown with a soft glow effect, illuminating the grain of the wood. The style is low-poly but high-texture, perfect for high-end Roblox experiences." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDY2QKCFkguLv_ZiN0LW41oB6Ow3D1vngRSGViYLKS6s0JYWQtAsgDiQcwqgLAtuOFVeTs-BZDBQqOJg13s21oCUw_J5GqgOK_N742YwUB9ukvjgyLL8F4ozd9lVFsFsDA9416tBubOvodjosvyDt6jA8t9LMD0RxsbmISp83jZbTSW2ovX05PtqrG8OSdMR73g7K6eJygnDMK9D8eo700Y_Xzqx4BTvq5DrlPey4nJarAIcX1WG2hAobfNlG-LE9KAFIvyuu-Hf_3t"/>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 h-20 bg-surface-container shadow-[0_-8px_20px_rgba(74,63,41,0.1)] rounded-t-xl">
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-2 opacity-70">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-label-sm font-label-sm">Catalog</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-2 opacity-70">
+<span class="material-symbols-outlined">star</span>
+<span class="text-label-sm font-label-sm">Favorites</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-2xl px-6 py-2 shadow-inner">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">download</span>
+<span class="text-label-sm font-label-sm">Download</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-2 opacity-70">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-sm font-label-sm">Settings</span>
+</div>
+</nav>
+<script>
+        // Simple interaction for cards
+        document.querySelectorAll('.skeuomorphic-card').forEach(card => {
+            card.addEventListener('mousedown', () => {
+                card.style.transform = 'scale(0.98)';
+            });
+            card.addEventListener('mouseup', () => {
+                card.style.transform = 'scale(1)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,54 @@
+{
+  "name": "CuteFamilyTown",
+  "servePort": 34872,
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$path": "src/ReplicatedStorage"
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$path": "src/ServerScriptService"
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$path": "src/StarterPlayer/StarterPlayerScripts"
+      }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Ambient": [0.45, 0.36, 0.26],
+        "Brightness": 2.3,
+        "ClockTime": 17.2,
+        "EnvironmentDiffuseScale": 0.35,
+        "EnvironmentSpecularScale": 0.25,
+        "GlobalShadows": true,
+        "OutdoorAmbient": [0.65, 0.54, 0.38],
+        "Technology": "ShadowMap"
+      },
+      "Atmosphere": {
+        "$className": "Atmosphere",
+        "$properties": {
+          "Color": [0.91, 0.83, 0.66],
+          "Decay": [0.44, 0.55, 0.48],
+          "Density": 0.18,
+          "Glare": 0.08,
+          "Haze": 1.2
+        }
+      },
+      "ColorCorrection": {
+        "$className": "ColorCorrectionEffect",
+        "$properties": {
+          "Brightness": 0.03,
+          "Contrast": 0.04,
+          "Saturation": 0.06,
+          "TintColor": [1, 0.91, 0.76]
+        }
+      }
+    }
+  }
+}

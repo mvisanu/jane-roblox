@@ -1,0 +1,2643 @@
+<roblox version="4">
+  <Item class="Lighting" referent="0">
+    <Properties>
+      <string name="Name">Lighting</string>
+      <Color3 name="Ambient">
+        <R>0.62</R>
+        <G>0.58</G>
+        <B>0.67</B>
+      </Color3>
+      <float name="Brightness">2.4</float>
+      <float name="ClockTime">10.5</float>
+      <float name="EnvironmentDiffuseScale">0.35</float>
+      <float name="EnvironmentSpecularScale">0.25</float>
+      <bool name="GlobalShadows">true</bool>
+      <Color3 name="OutdoorAmbient">
+        <R>0.73</R>
+        <G>0.73</G>
+        <B>0.78</B>
+      </Color3>
+      <token name="Technology">3</token>
+    </Properties>
+    <Item class="Atmosphere" referent="1">
+      <Properties>
+        <string name="Name">Atmosphere</string>
+        <Color3 name="Color">
+          <R>0.91</R>
+          <G>0.95</G>
+          <B>1</B>
+        </Color3>
+        <Color3 name="Decay">
+          <R>0.78</R>
+          <G>0.9</G>
+          <B>1</B>
+        </Color3>
+        <float name="Density">0.18</float>
+        <float name="Glare">0.08</float>
+        <float name="Haze">1.2</float>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class="ReplicatedStorage" referent="2">
+    <Properties>
+      <string name="Name">ReplicatedStorage</string>
+    </Properties>
+    <Item class="Folder" referent="3">
+      <Properties>
+        <string name="Name">Shared</string>
+      </Properties>
+      <Item class="ModuleScript" referent="4">
+        <Properties>
+          <string name="Name">Catalog</string>
+          <string name="Source"><![CDATA[local Catalog = {}
+
+Catalog.Seeds = {
+	Daisy = { DisplayName = "Daisy", DisplayNameThai = "เดซี่", GrowSeconds = 20, SellPrice = 30, Color = Color3.fromRGB(255, 245, 166) },
+	Tulip = { DisplayName = "Tulip", DisplayNameThai = "ทิวลิป", GrowSeconds = 35, SellPrice = 50, Color = Color3.fromRGB(255, 144, 174) },
+	Lavender = { DisplayName = "Lavender", DisplayNameThai = "ลาเวนเดอร์", GrowSeconds = 50, SellPrice = 75, Color = Color3.fromRGB(183, 159, 230) },
+}
+
+Catalog.SeedOrder = { "Daisy", "Tulip", "Lavender" }
+
+Catalog.Furniture = {
+	Chair = { DisplayName = "Cozy Chair", DisplayNameThai = "เก้าอี้แสนสบาย", Price = 75, Color = Color3.fromRGB(255, 182, 193), Kind = "Chair" },
+	Lamp = { DisplayName = "Star Lamp", DisplayNameThai = "โคมไฟดาว", Price = 60, Color = Color3.fromRGB(255, 231, 150), Kind = "Lamp" },
+	Table = { DisplayName = "Tea Table", DisplayNameThai = "โต๊ะน้ำชา", Price = 100, Color = Color3.fromRGB(200, 160, 124), Kind = "Table" },
+	Bed = { DisplayName = "Cloud Bed", DisplayNameThai = "เตียงก้อนเมฆ", Price = 150, Color = Color3.fromRGB(190, 220, 255), Kind = "Bed" },
+	Plant = { DisplayName = "Happy Plant", DisplayNameThai = "ต้นไม้อารมณ์ดี", Price = 50, Color = Color3.fromRGB(122, 199, 139), Kind = "Plant" },
+}
+
+Catalog.FurnitureOrder = { "Chair", "Lamp", "Table", "Bed", "Plant" }
+
+Catalog.Outfits = {
+	Sunshine = {
+		DisplayName = "Sunshine",
+		DisplayNameThai = "แสงแดด",
+		Torso = Color3.fromRGB(255, 219, 111),
+		Arms = Color3.fromRGB(255, 224, 189),
+		Legs = Color3.fromRGB(103, 174, 216),
+	},
+	Berry = {
+		DisplayName = "Berry Picnic",
+		DisplayNameThai = "ปิคนิคเบอร์รี",
+		Torso = Color3.fromRGB(229, 119, 154),
+		Arms = Color3.fromRGB(255, 224, 189),
+		Legs = Color3.fromRGB(244, 196, 216),
+	},
+	Mint = {
+		DisplayName = "Mint Explorer",
+		DisplayNameThai = "นักสำรวจมินต์",
+		Torso = Color3.fromRGB(116, 205, 171),
+		Arms = Color3.fromRGB(255, 224, 189),
+		Legs = Color3.fromRGB(90, 137, 166),
+	},
+}
+
+Catalog.OutfitOrder = { "Sunshine", "Berry", "Mint" }
+
+return table.freeze(Catalog)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="5">
+        <Properties>
+          <string name="Name">Config</string>
+          <string name="Source"><![CDATA[local Config = {
+	DataStoreName = "CuteFamilyTown_v1",
+	DataVersion = 1,
+	AutoSaveSeconds = 60,
+	StartingCoins = 500,
+	StartingSeeds = 5,
+	MaxFurniture = 12,
+	InteractionDistance = 18,
+	CafeUnlockCost = 300,
+	CafeServeCooldown = 6,
+	CafeServeReward = 35,
+	DailyBaseReward = 75,
+	DailyStreakBonus = 15,
+	QuestReward = 120,
+	GardenSlots = 4,
+	HomeCount = 8,
+	RequestCooldown = 0.12,
+}
+
+Config.HomeColors = {
+	{ Name = "Cream", Color = Color3.fromRGB(255, 241, 206) },
+	{ Name = "Blossom", Color = Color3.fromRGB(255, 198, 211) },
+	{ Name = "Mint", Color = Color3.fromRGB(187, 234, 211) },
+	{ Name = "Sky", Color = Color3.fromRGB(189, 222, 255) },
+	{ Name = "Lavender", Color = Color3.fromRGB(216, 198, 245) },
+}
+
+Config.Waypoints = {
+	Town = Vector3.new(0, 4, 0),
+	Cafe = Vector3.new(-82, 4, -58),
+	PetShop = Vector3.new(82, 4, -58),
+	FlowerShop = Vector3.new(-82, 4, 58),
+	Playground = Vector3.new(82, 4, 58),
+	School = Vector3.new(0, 4, -130),
+	Park = Vector3.new(0, 4, 130),
+	Lake = Vector3.new(0, 4, 155),
+	Beach = Vector3.new(155, 4, 0),
+	Forest = Vector3.new(-155, 4, 0),
+}
+
+return table.freeze(Config)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="6">
+        <Properties>
+          <string name="Name">RemoteNames</string>
+          <string name="Source"><![CDATA[return table.freeze({
+	Folder = "FamilyTownRemotes",
+	Request = "Request",
+	StateChanged = "StateChanged",
+	Toast = "Toast",
+})
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="7">
+        <Properties>
+          <string name="Name">Util</string>
+          <string name="Source"><![CDATA[local Util = {}
+
+function Util.deepCopy(value)
+	if type(value) ~= "table" then
+		return value
+	end
+
+	local copy = {}
+	for key, child in pairs(value) do
+		copy[Util.deepCopy(key)] = Util.deepCopy(child)
+	end
+	return copy
+end
+
+function Util.reconcile(target, template)
+	for key, defaultValue in pairs(template) do
+		if target[key] == nil then
+			target[key] = Util.deepCopy(defaultValue)
+		elseif type(defaultValue) == "table" and type(target[key]) == "table" then
+			Util.reconcile(target[key], defaultValue)
+		end
+	end
+	return target
+end
+
+function Util.findIndex(list, value)
+	for index, item in ipairs(list) do
+		if item == value then
+			return index
+		end
+	end
+	return nil
+end
+
+function Util.clampNumber(value, minimum, maximum, fallback)
+	if type(value) ~= "number" or value ~= value then
+		return fallback
+	end
+	return math.clamp(value, minimum, maximum)
+end
+
+return table.freeze(Util)
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ServerScriptService" referent="8">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Script" referent="9">
+      <Properties>
+        <string name="Name">Server</string>
+        <token name="RunContext">0</token>
+        <string name="Source"><![CDATA[local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RemoteNames = require(Shared:WaitForChild("RemoteNames"))
+
+local oldRemotes = ReplicatedStorage:FindFirstChild(RemoteNames.Folder)
+if oldRemotes then
+	oldRemotes:Destroy()
+end
+
+local remoteFolder = Instance.new("Folder")
+remoteFolder.Name = RemoteNames.Folder
+remoteFolder.Parent = ReplicatedStorage
+
+local request = Instance.new("RemoteFunction")
+request.Name = RemoteNames.Request
+request.Parent = remoteFolder
+
+local stateChanged = Instance.new("RemoteEvent")
+stateChanged.Name = RemoteNames.StateChanged
+stateChanged.Parent = remoteFolder
+
+local toast = Instance.new("RemoteEvent")
+toast.Name = RemoteNames.Toast
+toast.Parent = remoteFolder
+
+local remotes = {
+	Request = request,
+	StateChanged = stateChanged,
+	Toast = toast,
+}
+
+local Services = script.Parent:WaitForChild("Services")
+local DataService = require(Services:WaitForChild("DataService"))
+local WorldService = require(Services:WaitForChild("WorldService"))
+local GameService = require(Services:WaitForChild("GameService"))
+
+local dataService = DataService.new()
+local worldService = WorldService.new(remotes)
+local gameService = GameService.new(dataService, worldService, remotes)
+
+worldService:SetActionHandler(function(player, action, payload)
+	return gameService:Handle(player, action, payload)
+end)
+
+local function refreshCharacter(player)
+	local data = dataService:Get(player)
+	if not data then
+		return
+	end
+	task.wait(0.5)
+	worldService:ApplyOutfit(player, data)
+	worldService:RefreshPet(player, data)
+end
+
+local function preparePlayer(player)
+	if not dataService:Load(player) or not player.Parent then
+		return
+	end
+	worldService:AssignHome(player)
+	gameService:OnPlayerReady(player)
+
+	player.CharacterAdded:Connect(function()
+		refreshCharacter(player)
+	end)
+	if player.Character then
+		task.spawn(refreshCharacter, player)
+	end
+end
+
+Players.PlayerAdded:Connect(function(player)
+	task.spawn(preparePlayer, player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	dataService:Unload(player)
+	gameService:ForgetPlayer(player)
+	worldService:ReleaseHome(player)
+end)
+
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(preparePlayer, player)
+end
+
+dataService:StartAutosave(Players)
+
+game:BindToClose(function()
+	dataService:Shutdown(Players)
+end)
+]]></string>
+      </Properties>
+    </Item>
+    <Item class="Folder" referent="10">
+      <Properties>
+        <string name="Name">Services</string>
+      </Properties>
+      <Item class="ModuleScript" referent="11">
+        <Properties>
+          <string name="Name">DataService</string>
+          <string name="Source"><![CDATA[local DataStoreService = game:GetService("DataStoreService")
+local RunService = game:GetService("RunService")
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Catalog = require(Shared:WaitForChild("Catalog"))
+local Config = require(Shared:WaitForChild("Config"))
+local Util = require(Shared:WaitForChild("Util"))
+
+local DataService = {}
+DataService.__index = DataService
+
+local function makeGardenSlots()
+	local slots = {}
+	for index = 1, Config.GardenSlots do
+		slots[index] = {
+			State = "Empty",
+			Seed = "",
+			PlantedAt = 0,
+			Watered = false,
+		}
+	end
+	return slots
+end
+
+local PROFILE_TEMPLATE = {
+	Version = Config.DataVersion,
+	Coins = Config.StartingCoins,
+	Home = {
+		Paint = "Cream",
+		Furniture = {},
+		OwnedFurniture = { Chair = 1 },
+	},
+	Garden = {
+		Seeds = { Daisy = Config.StartingSeeds, Tulip = 0, Lavender = 0 },
+		Slots = makeGardenSlots(),
+	},
+	Pet = {
+		Species = "Cat",
+		Name = "Mochi",
+		Level = 1,
+		XP = 0,
+		Hunger = 100,
+		Cleanliness = 100,
+		LastPlayedAt = 0,
+	},
+	Cafe = {
+		Unlocked = false,
+		Level = 1,
+		Served = 0,
+		Staff = 0,
+		LastServedAt = 0,
+	},
+	Wardrobe = {
+		Owned = { "Sunshine", "Berry", "Mint" },
+		Equipped = "Sunshine",
+	},
+	Daily = {
+		LastClaimDay = -1,
+		Streak = 0,
+		Quest = {
+			Day = -1,
+			Action = "PetFeed",
+			Description = "Feed your pet",
+			DescriptionThai = "ให้อาหารสัตว์เลี้ยง",
+			Progress = 0,
+			Target = 3,
+			Completed = false,
+		},
+	},
+	Stats = {
+		FlowersHarvested = 0,
+		CustomersServed = 0,
+		FurniturePlaced = 0,
+	},
+	Settings = {
+		Onboarded = false,
+	},
+}
+
+local function sanitizeProfile(data)
+	for _, section in ipairs({ "Home", "Garden", "Pet", "Cafe", "Wardrobe", "Daily", "Stats", "Settings" }) do
+		if type(data[section]) ~= "table" then
+			data[section] = Util.deepCopy(PROFILE_TEMPLATE[section])
+		end
+	end
+	Util.reconcile(data, PROFILE_TEMPLATE)
+
+	data.Coins = math.max(0, math.floor(tonumber(data.Coins) or Config.StartingCoins))
+	data.Home.Paint = type(data.Home.Paint) == "string" and data.Home.Paint or "Cream"
+	if type(data.Home.Furniture) ~= "table" then
+		data.Home.Furniture = {}
+	end
+	if type(data.Home.OwnedFurniture) ~= "table" then
+		data.Home.OwnedFurniture = { Chair = 1 }
+	end
+	local cleanFurniture = {}
+	for _, entry in ipairs(data.Home.Furniture) do
+		if #cleanFurniture >= Config.MaxFurniture then
+			break
+		end
+		if type(entry) == "table" and type(entry.Id) == "string" and Catalog.Furniture[entry.Id] then
+			table.insert(cleanFurniture, { Id = entry.Id, Slot = #cleanFurniture + 1 })
+		end
+	end
+	data.Home.Furniture = cleanFurniture
+	for itemId in pairs(Catalog.Furniture) do
+		data.Home.OwnedFurniture[itemId] = math.max(0, math.floor(tonumber(data.Home.OwnedFurniture[itemId]) or 0))
+	end
+	data.Home.OwnedFurniture.Chair = math.max(1, data.Home.OwnedFurniture.Chair)
+
+	if type(data.Garden.Seeds) ~= "table" then
+		data.Garden.Seeds = {}
+	end
+	for seedId in pairs(Catalog.Seeds) do
+		data.Garden.Seeds[seedId] = math.max(0, math.floor(tonumber(data.Garden.Seeds[seedId]) or 0))
+	end
+	if type(data.Garden.Slots) ~= "table" then
+		data.Garden.Slots = makeGardenSlots()
+	end
+	for index = 1, Config.GardenSlots do
+		local slot = data.Garden.Slots[index]
+		if type(slot) ~= "table" or (slot.State ~= "Empty" and slot.State ~= "Planted") then
+			data.Garden.Slots[index] = { State = "Empty", Seed = "", PlantedAt = 0, Watered = false }
+		else
+			slot.Seed = type(slot.Seed) == "string" and slot.Seed or ""
+			slot.PlantedAt = math.max(0, math.floor(tonumber(slot.PlantedAt) or 0))
+			slot.Watered = slot.Watered == true
+			if slot.State == "Planted" and not Catalog.Seeds[slot.Seed] then
+				data.Garden.Slots[index] = { State = "Empty", Seed = "", PlantedAt = 0, Watered = false }
+			end
+		end
+	end
+
+	data.Pet.Name = type(data.Pet.Name) == "string" and string.sub(data.Pet.Name, 1, 20) or "Mochi"
+	data.Pet.Species = "Cat"
+	data.Pet.Level = math.clamp(math.floor(tonumber(data.Pet.Level) or 1), 1, 100)
+	data.Pet.XP = math.max(0, math.floor(tonumber(data.Pet.XP) or 0))
+	data.Pet.Hunger = math.clamp(math.floor(tonumber(data.Pet.Hunger) or 100), 0, 100)
+	data.Pet.Cleanliness = math.clamp(math.floor(tonumber(data.Pet.Cleanliness) or 100), 0, 100)
+	data.Pet.LastPlayedAt = math.max(0, math.floor(tonumber(data.Pet.LastPlayedAt) or 0))
+
+	data.Cafe.Unlocked = data.Cafe.Unlocked == true
+	data.Cafe.Level = math.clamp(math.floor(tonumber(data.Cafe.Level) or 1), 1, 100)
+	data.Cafe.Served = math.max(0, math.floor(tonumber(data.Cafe.Served) or 0))
+	data.Cafe.Staff = math.clamp(math.floor(tonumber(data.Cafe.Staff) or 0), 0, 3)
+	data.Cafe.LastServedAt = math.max(0, math.floor(tonumber(data.Cafe.LastServedAt) or 0))
+
+	data.Wardrobe.Owned = Util.deepCopy(Catalog.OutfitOrder)
+	if type(data.Wardrobe.Equipped) ~= "string" or not Catalog.Outfits[data.Wardrobe.Equipped] then
+		data.Wardrobe.Equipped = "Sunshine"
+	end
+
+	if type(data.Daily.Quest) ~= "table"
+		or type(data.Daily.Quest.Day) ~= "number"
+		or type(data.Daily.Quest.Action) ~= "string"
+		or type(data.Daily.Quest.Description) ~= "string"
+		or type(data.Daily.Quest.DescriptionThai) ~= "string"
+	then
+		data.Daily.Quest = Util.deepCopy(PROFILE_TEMPLATE.Daily.Quest)
+	end
+	data.Daily.LastClaimDay = math.floor(tonumber(data.Daily.LastClaimDay) or -1)
+	data.Daily.Streak = math.max(0, math.floor(tonumber(data.Daily.Streak) or 0))
+	data.Daily.Quest.Progress = math.max(0, math.floor(tonumber(data.Daily.Quest.Progress) or 0))
+	data.Daily.Quest.Target = math.clamp(math.floor(tonumber(data.Daily.Quest.Target) or 3), 1, 20)
+	data.Daily.Quest.Completed = data.Daily.Quest.Completed == true
+
+	for statName in pairs(PROFILE_TEMPLATE.Stats) do
+		data.Stats[statName] = math.max(0, math.floor(tonumber(data.Stats[statName]) or 0))
+	end
+	data.Settings.Onboarded = data.Settings.Onboarded == true
+	return data
+end
+
+function DataService.new()
+	local self = setmetatable({}, DataService)
+	self._profiles = {}
+	self._loading = {}
+	local storeSuccess, storeOrError = pcall(function()
+		return DataStoreService:GetDataStore(Config.DataStoreName)
+	end)
+	if storeSuccess then
+		self._store = storeOrError
+	elseif RunService:IsStudio() then
+		self._store = nil
+		warn("DataStore is unavailable for this local place; using a session-only Studio profile.")
+	else
+		error(string.format("Could not open the player DataStore: %s", tostring(storeOrError)))
+	end
+	self._running = true
+	return self
+end
+
+function DataService:_key(player)
+	return string.format("Player_%d", player.UserId)
+end
+
+function DataService:_createLeaderstats(player, data)
+	local old = player:FindFirstChild("leaderstats")
+	if old then
+		old:Destroy()
+	end
+
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+
+	local coins = Instance.new("IntValue")
+	coins.Name = "Coins"
+	coins.Value = math.floor(data.Coins)
+	coins.Parent = leaderstats
+end
+
+function DataService:SyncLeaderstats(player)
+	local data = self._profiles[player]
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local coins = leaderstats and leaderstats:FindFirstChild("Coins")
+	if data and coins then
+		coins.Value = math.max(0, math.floor(data.Coins))
+	end
+end
+
+function DataService:Load(player)
+	if self._profiles[player] then
+		return true
+	end
+	if self._loading[player] then
+		repeat
+			task.wait()
+		until not self._loading[player] or not player.Parent
+		return self._profiles[player] ~= nil
+	end
+
+	self._loading[player] = true
+	local loadedData
+	local lastError
+
+	if self._store then
+		local maxAttempts = RunService:IsStudio() and 1 or 3
+		for attempt = 1, maxAttempts do
+			local success, result = pcall(function()
+				return self._store:GetAsync(self:_key(player))
+			end)
+			if success then
+				loadedData = result
+				lastError = nil
+				break
+			end
+			lastError = result
+			if attempt < maxAttempts then
+				task.wait(attempt)
+			end
+		end
+	end
+
+	if lastError and not RunService:IsStudio() then
+		self._loading[player] = nil
+		warn(string.format("Profile load failed for %d: %s", player.UserId, tostring(lastError)))
+		player:Kick("Your cozy home could not be loaded. Please rejoin in a moment.")
+		return false
+	end
+
+	if type(loadedData) ~= "table" then
+		loadedData = Util.deepCopy(PROFILE_TEMPLATE)
+	else
+		sanitizeProfile(loadedData)
+	end
+
+	loadedData.Version = Config.DataVersion
+	sanitizeProfile(loadedData)
+	self._profiles[player] = loadedData
+	self._loading[player] = nil
+	self:_createLeaderstats(player, loadedData)
+	player:SetAttribute("DataLoaded", true)
+	return true
+end
+
+function DataService:Get(player)
+	return self._profiles[player]
+end
+
+function DataService:GetSnapshot(player)
+	local data = self._profiles[player]
+	if not data then
+		return nil
+	end
+	return Util.deepCopy(data)
+end
+
+function DataService:Save(player, reason)
+	local data = self._profiles[player]
+	if not data then
+		return false
+	end
+	if not self._store then
+		return false
+	end
+
+	local snapshot = Util.deepCopy(data)
+	local success, result = pcall(function()
+		return self._store:UpdateAsync(self:_key(player), function()
+			return snapshot
+		end)
+	end)
+
+	if not success then
+		warn(string.format("Profile save failed for %d (%s): %s", player.UserId, reason or "unknown", tostring(result)))
+	end
+	return success
+end
+
+function DataService:Unload(player)
+	self:Save(player, "leave")
+	self._profiles[player] = nil
+	self._loading[player] = nil
+end
+
+function DataService:StartAutosave(playersService)
+	task.spawn(function()
+		while self._running do
+			task.wait(Config.AutoSaveSeconds)
+			for _, player in ipairs(playersService:GetPlayers()) do
+				task.spawn(function()
+					self:Save(player, "autosave")
+				end)
+			end
+		end
+	end)
+end
+
+function DataService:Shutdown(playersService)
+	self._running = false
+	local pending = 0
+	for _, player in ipairs(playersService:GetPlayers()) do
+		pending += 1
+		task.spawn(function()
+			self:Save(player, "shutdown")
+			pending -= 1
+		end)
+	end
+
+	local started = os.clock()
+	repeat
+		task.wait()
+	until pending == 0 or os.clock() - started > 25
+end
+
+return DataService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="12">
+        <Properties>
+          <string name="Name">GameService</string>
+          <string name="Source"><![CDATA[local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Catalog = require(Shared:WaitForChild("Catalog"))
+local Config = require(Shared:WaitForChild("Config"))
+local Util = require(Shared:WaitForChild("Util"))
+
+local GameService = {}
+GameService.__index = GameService
+
+local QUESTS = {
+	{ Action = "PetFeed", Description = "Feed Mochi 3 times", DescriptionThai = "ให้อาหารโมจิ 3 ครั้ง", Target = 3 },
+	{ Action = "GardenHarvest", Description = "Pick 2 flowers", DescriptionThai = "เก็บดอกไม้ 2 ดอก", Target = 2 },
+	{ Action = "CafeServe", Description = "Serve 3 cafe guests", DescriptionThai = "เสิร์ฟลูกค้าคาเฟ่ 3 คน", Target = 3 },
+	{ Action = "Decorate", Description = "Place 2 home items", DescriptionThai = "วางของแต่งบ้าน 2 ชิ้น", Target = 2 },
+}
+
+local SEED_PRICES = { Daisy = 15, Tulip = 25, Lavender = 40 }
+
+local function wholeNumber(value, minimum, maximum)
+	return type(value) == "number" and value % 1 == 0 and value >= minimum and value <= maximum
+end
+
+local function contains(list, value)
+	return Util.findIndex(list, value) ~= nil
+end
+
+function GameService.new(dataService, worldService, remotes)
+	local self = setmetatable({}, GameService)
+	self._data = dataService
+	self._world = worldService
+	self._remotes = remotes
+	self._lastRequests = {}
+	self:_bindRemote()
+	return self
+end
+
+function GameService:_today()
+	return math.floor(os.time() / 86400)
+end
+
+function GameService:_ensureQuest(player)
+	local data = self._data:Get(player)
+	if not data then
+		return
+	end
+
+	local day = self:_today()
+	if data.Daily.Quest.Day ~= day or type(data.Daily.Quest.DescriptionThai) ~= "string" then
+		local choice = QUESTS[((day + player.UserId) % #QUESTS) + 1]
+		data.Daily.Quest = {
+			Day = day,
+			Action = choice.Action,
+			Description = choice.Description,
+			DescriptionThai = choice.DescriptionThai,
+			Progress = 0,
+			Target = choice.Target,
+			Completed = false,
+		}
+	end
+end
+
+function GameService:_progressQuest(player, action, amount)
+	self:_ensureQuest(player)
+	local data = self._data:Get(player)
+	local quest = data and data.Daily.Quest
+	if not quest or quest.Completed or quest.Action ~= action then
+		return
+	end
+
+	quest.Progress = math.min(quest.Target, quest.Progress + (amount or 1))
+	if quest.Progress >= quest.Target then
+		quest.Completed = true
+		data.Coins += Config.QuestReward
+		self._remotes.Toast:FireClient(player, string.format("Quest complete! +%d coins", Config.QuestReward))
+	end
+end
+
+function GameService:GetState(player)
+	self:_ensureQuest(player)
+	local state = self._data:GetSnapshot(player)
+	if not state then
+		return nil
+	end
+
+	state.ServerTime = os.time()
+	state.Daily.CanClaim = state.Daily.LastClaimDay ~= self:_today()
+	for _, slot in ipairs(state.Garden.Slots) do
+		if slot.State == "Planted" and Catalog.Seeds[slot.Seed] then
+			local elapsed = os.time() - slot.PlantedAt
+			slot.SecondsLeft = math.max(0, Catalog.Seeds[slot.Seed].GrowSeconds - elapsed)
+			slot.Ready = slot.Watered and slot.SecondsLeft <= 0
+		else
+			slot.SecondsLeft = 0
+			slot.Ready = false
+		end
+	end
+	return state
+end
+
+function GameService:_result(player, ok, message)
+	self._data:SyncLeaderstats(player)
+	local state = self:GetState(player)
+	if state then
+		self._remotes.StateChanged:FireClient(player, state)
+	end
+	return { ok = ok, message = message, state = state }
+end
+
+function GameService:_spend(data, amount)
+	if data.Coins < amount then
+		return false
+	end
+	data.Coins -= amount
+	return true
+end
+
+function GameService:_levelPet(pet)
+	while pet.XP >= pet.Level * 25 do
+		pet.XP -= pet.Level * 25
+		pet.Level += 1
+	end
+end
+
+function GameService:_checkRate(player, action)
+	if action == "GetState" then
+		return true
+	end
+	local now = os.clock()
+	local playerRates = self._lastRequests[player]
+	if not playerRates then
+		playerRates = {}
+		self._lastRequests[player] = playerRates
+	end
+	if playerRates[action] and now - playerRates[action] < Config.RequestCooldown then
+		return false
+	end
+	playerRates[action] = now
+	return true
+end
+
+function GameService:_gardenSmart(player, payload)
+	local data = self._data:Get(player)
+	local index = tonumber(payload.slot)
+	if not data or not wholeNumber(index, 1, Config.GardenSlots) then
+		return false, "Choose a garden patch first."
+	end
+	local slot = data.Garden.Slots[index]
+	if slot.State == "Empty" then
+		return self:_gardenPlant(player, { slot = index, seed = "Daisy" })
+	elseif not slot.Watered then
+		return self:_gardenWater(player, { slot = index })
+	else
+		return self:_gardenHarvest(player, { slot = index })
+	end
+end
+
+function GameService:_gardenPlant(player, payload)
+	local data = self._data:Get(player)
+	local index = tonumber(payload.slot)
+	local seed = payload.seed
+	if not data or not wholeNumber(index, 1, Config.GardenSlots) or type(seed) ~= "string" or not Catalog.Seeds[seed] then
+		return false, "That seed cannot be planted."
+	end
+	local slot = data.Garden.Slots[index]
+	if slot.State ~= "Empty" then
+		return false, "That patch is already growing something."
+	end
+	if (data.Garden.Seeds[seed] or 0) < 1 then
+		return false, "You need more seeds from the flower shop."
+	end
+
+	data.Garden.Seeds[seed] -= 1
+	slot.State = "Planted"
+	slot.Seed = seed
+	slot.PlantedAt = os.time()
+	slot.Watered = false
+	self._world:RefreshGarden(player, data)
+	return true, string.format("%s planted! Water it next.", Catalog.Seeds[seed].DisplayName)
+end
+
+function GameService:_gardenWater(player, payload)
+	local data = self._data:Get(player)
+	local index = tonumber(payload.slot)
+	if not data or not wholeNumber(index, 1, Config.GardenSlots) then
+		return false, "Choose a garden patch first."
+	end
+	local slot = data.Garden.Slots[index]
+	if slot.State ~= "Planted" then
+		return false, "Plant a seed here first."
+	end
+	if slot.Watered then
+		return false, "This flower is already watered."
+	end
+	slot.Watered = true
+	self._world:RefreshGarden(player, data)
+	return true, "Splish splash! Your flower is growing."
+end
+
+function GameService:_gardenHarvest(player, payload)
+	local data = self._data:Get(player)
+	local index = tonumber(payload.slot)
+	if not data or not wholeNumber(index, 1, Config.GardenSlots) then
+		return false, "Choose a garden patch first."
+	end
+	local slot = data.Garden.Slots[index]
+	local seedInfo = Catalog.Seeds[slot.Seed]
+	if slot.State ~= "Planted" or not seedInfo then
+		return false, "There is no flower to pick yet."
+	end
+	if not slot.Watered then
+		return false, "This flower needs water first."
+	end
+	local secondsLeft = seedInfo.GrowSeconds - (os.time() - slot.PlantedAt)
+	if secondsLeft > 0 then
+		return false, string.format("Your flower needs %d more seconds.", math.ceil(secondsLeft))
+	end
+
+	data.Coins += seedInfo.SellPrice
+	data.Stats.FlowersHarvested += 1
+	data.Garden.Slots[index] = { State = "Empty", Seed = "", PlantedAt = 0, Watered = false }
+	self:_progressQuest(player, "GardenHarvest", 1)
+	self._world:RefreshGarden(player, data)
+	return true, string.format("Beautiful! +%d coins", seedInfo.SellPrice)
+end
+
+function GameService:_handleAction(player, action, payload)
+	local data = self._data:Get(player)
+	if not data then
+		return false, "Your home is still loading."
+	end
+
+	if action == "ClaimDaily" then
+		local today = self:_today()
+		if data.Daily.LastClaimDay == today then
+			return false, "You already opened today's gift."
+		end
+		if data.Daily.LastClaimDay == today - 1 then
+			data.Daily.Streak += 1
+		else
+			data.Daily.Streak = 1
+		end
+		data.Daily.LastClaimDay = today
+		local reward = Config.DailyBaseReward + math.min(data.Daily.Streak - 1, 7) * Config.DailyStreakBonus
+		data.Coins += reward
+		return true, string.format("Daily gift: +%d coins!", reward)
+	elseif action == "GardenSmart" then
+		return self:_gardenSmart(player, payload)
+	elseif action == "GardenPlant" then
+		return self:_gardenPlant(player, payload)
+	elseif action == "GardenWater" then
+		return self:_gardenWater(player, payload)
+	elseif action == "GardenHarvest" then
+		return self:_gardenHarvest(player, payload)
+	elseif action == "BuySeed" then
+		local seed = payload.seed
+		local price = type(seed) == "string" and SEED_PRICES[seed]
+		if not price or not Catalog.Seeds[seed] then
+			return false, "That seed is not for sale."
+		end
+		if not self:_spend(data, price) then
+			return false, "Save a few more coins for that seed."
+		end
+		data.Garden.Seeds[seed] = (data.Garden.Seeds[seed] or 0) + 1
+		return true, string.format("One %s seed added!", Catalog.Seeds[seed].DisplayName)
+	elseif action == "PetFeed" then
+		if not self:_spend(data, 5) then
+			return false, "A pet snack costs 5 coins."
+		end
+		data.Pet.Hunger = math.min(100, data.Pet.Hunger + 20)
+		data.Pet.Cleanliness = math.max(0, data.Pet.Cleanliness - 2)
+		data.Pet.XP += 5
+		self:_levelPet(data.Pet)
+		self:_progressQuest(player, "PetFeed", 1)
+		self._world:RefreshPet(player, data)
+		return true, "Mochi loved the snack!"
+	elseif action == "PetPlay" then
+		local waitLeft = 5 - (os.time() - data.Pet.LastPlayedAt)
+		if waitLeft > 0 then
+			return false, string.format("Mochi is catching their breath (%ds).", waitLeft)
+		end
+		data.Pet.LastPlayedAt = os.time()
+		data.Pet.Hunger = math.max(0, data.Pet.Hunger - 5)
+		data.Pet.Cleanliness = math.max(0, data.Pet.Cleanliness - 5)
+		data.Pet.XP += 4
+		self:_levelPet(data.Pet)
+		self._world:PetCelebrate(player)
+		return true, "You and Mochi played together!"
+	elseif action == "PetBath" then
+		if data.Pet.Cleanliness >= 100 then
+			return false, "Mochi is already squeaky clean."
+		end
+		data.Pet.Cleanliness = 100
+		self._world:PetCelebrate(player)
+		return true, "Bubble bath complete! Mochi is sparkling."
+	elseif action == "CafeUnlock" then
+		if data.Cafe.Unlocked then
+			return false, "Your café is already open."
+		end
+		if not self:_spend(data, Config.CafeUnlockCost) then
+			return false, string.format("The café needs %d coins to open.", Config.CafeUnlockCost)
+		end
+		data.Cafe.Unlocked = true
+		return true, "Your family café is open!"
+	elseif action == "CafeSmart" or action == "CafeServe" then
+		if not data.Cafe.Unlocked then
+			return self:_handleAction(player, "CafeUnlock", payload)
+		end
+		local waitLeft = Config.CafeServeCooldown - (os.time() - data.Cafe.LastServedAt)
+		if waitLeft > 0 then
+			return false, string.format("The next guest arrives in %ds.", waitLeft)
+		end
+		data.Cafe.LastServedAt = os.time()
+		data.Cafe.Served += 1
+		data.Stats.CustomersServed += 1
+		local reward = Config.CafeServeReward + (data.Cafe.Level - 1) * 5 + data.Cafe.Staff * 5
+		data.Coins += reward
+		self:_progressQuest(player, "CafeServe", 1)
+		self._world:ShowCafeCustomer(player)
+		return true, string.format("Cupcake served! +%d coins", reward)
+	elseif action == "CafeUpgrade" then
+		if not data.Cafe.Unlocked then
+			return false, "Open your cafe first."
+		end
+		if data.Cafe.Served < data.Cafe.Level * 5 then
+			return false, string.format("Serve %d guests before the next upgrade.", data.Cafe.Level * 5)
+		end
+		local cost = data.Cafe.Level * 180
+		if not self:_spend(data, cost) then
+			return false, string.format("The cafe upgrade costs %d coins.", cost)
+		end
+		data.Cafe.Level += 1
+		return true, string.format("Your cafe reached level %d!", data.Cafe.Level)
+	elseif action == "HireCafeStaff" then
+		if not data.Cafe.Unlocked then
+			return false, "Open your cafe first."
+		end
+		if data.Cafe.Staff >= 3 then
+			return false, "Your cafe team is full."
+		end
+		local cost = 250 + data.Cafe.Staff * 200
+		if not self:_spend(data, cost) then
+			return false, string.format("A friendly helper costs %d coins.", cost)
+		end
+		data.Cafe.Staff += 1
+		return true, "A friendly NPC helper joined your cafe!"
+	elseif action == "BuyFurniture" then
+		local itemId = payload.item
+		local item = type(itemId) == "string" and Catalog.Furniture[itemId]
+		if not item then
+			return false, "That furniture is not in the catalog."
+		end
+		if not self:_spend(data, item.Price) then
+			return false, "Save a few more coins for that item."
+		end
+		data.Home.OwnedFurniture[itemId] = (data.Home.OwnedFurniture[itemId] or 0) + 1
+		return true, string.format("%s added to your home box!", item.DisplayName)
+	elseif action == "PlaceFurniture" then
+		local itemId = payload.item
+		if type(itemId) ~= "string" or not Catalog.Furniture[itemId] then
+			return false, "Choose a home item first."
+		end
+		if #data.Home.Furniture >= Config.MaxFurniture then
+			return false, "Your little home is full for now."
+		end
+		local placedCount = 0
+		for _, entry in ipairs(data.Home.Furniture) do
+			if entry.Id == itemId then
+				placedCount += 1
+			end
+		end
+		if placedCount >= (data.Home.OwnedFurniture[itemId] or 0) then
+			return false, "Buy another one before placing it."
+		end
+		table.insert(data.Home.Furniture, { Id = itemId, Slot = #data.Home.Furniture + 1 })
+		data.Stats.FurniturePlaced += 1
+		self:_progressQuest(player, "Decorate", 1)
+		self._world:RefreshHome(player, data)
+		return true, string.format("%s placed!", Catalog.Furniture[itemId].DisplayName)
+	elseif action == "RemoveFurniture" then
+		if #data.Home.Furniture == 0 then
+			return false, "There is nothing to pack away."
+		end
+		local removed = table.remove(data.Home.Furniture)
+		self._world:RefreshHome(player, data)
+		local item = Catalog.Furniture[removed.Id]
+		return true, string.format("%s is back in your home box.", item and item.DisplayName or "The item")
+	elseif action == "PaintHome" then
+		local current = 1
+		for index, entry in ipairs(Config.HomeColors) do
+			if entry.Name == data.Home.Paint then
+				current = index
+				break
+			end
+		end
+		local nextColor = Config.HomeColors[(current % #Config.HomeColors) + 1]
+		data.Home.Paint = nextColor.Name
+		self._world:RefreshHome(player, data)
+		return true, string.format("Your home is now %s!", nextColor.Name)
+	elseif action == "EquipOutfit" then
+		local outfit = payload.outfit
+		if type(outfit) ~= "string" or not Catalog.Outfits[outfit] or not contains(data.Wardrobe.Owned, outfit) then
+			return false, "That outfit is not in your closet."
+		end
+		data.Wardrobe.Equipped = outfit
+		self._world:ApplyOutfit(player, data)
+		return true, string.format("You put on %s!", Catalog.Outfits[outfit].DisplayName)
+	elseif action == "Teleport" then
+		local destination = payload.destination
+		if destination == "Home" then
+			self._world:TeleportHome(player)
+		elseif type(destination) == "string" and Config.Waypoints[destination] then
+			self._world:Teleport(player, destination)
+		else
+			return false, "That place is not on your map."
+		end
+		return true, string.format("Welcome to %s!", destination)
+	elseif action == "FinishOnboarding" then
+		data.Settings.Onboarded = true
+		return true, "Have a lovely day in Family Town!"
+	end
+
+	return false, "That activity is not available."
+end
+
+function GameService:Handle(player, action, payload)
+	if type(action) ~= "string" then
+		return self:_result(player, false, "That request was not understood.")
+	end
+	if action == "GetState" then
+		return self:_result(player, true, "Ready")
+	end
+	if not self:_checkRate(player, action) then
+		return self:_result(player, false, "One moment, please.")
+	end
+	payload = type(payload) == "table" and payload or {}
+
+	local ok, actionOk, message = xpcall(function()
+		local success, response = self:_handleAction(player, action, payload)
+		return success, response
+	end, debug.traceback)
+	if not ok then
+		warn(string.format("Action %s failed for %s: %s", action, player.Name, tostring(actionOk)))
+		return self:_result(player, false, "Something went wobbly. Please try again.")
+	end
+	return self:_result(player, actionOk, message)
+end
+
+function GameService:OnPlayerReady(player)
+	self:_ensureQuest(player)
+	local data = self._data:Get(player)
+	if data then
+		self._world:RefreshHome(player, data)
+		self._world:RefreshGarden(player, data)
+		self._world:RefreshPet(player, data)
+		self._world:ApplyOutfit(player, data)
+		self._remotes.StateChanged:FireClient(player, self:GetState(player))
+	end
+end
+
+function GameService:ForgetPlayer(player)
+	self._lastRequests[player] = nil
+end
+
+function GameService:_bindRemote()
+	self._remotes.Request.OnServerInvoke = function(player, action, payload)
+		return self:Handle(player, action, payload)
+	end
+end
+
+return GameService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="13">
+        <Properties>
+          <string name="Name">WorldService</string>
+          <string name="Source"><![CDATA[local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Catalog = require(Shared:WaitForChild("Catalog"))
+local Config = require(Shared:WaitForChild("Config"))
+
+local WorldService = {}
+WorldService.__index = WorldService
+
+local COLORS = {
+	Grass = Color3.fromRGB(181, 224, 168),
+	Road = Color3.fromRGB(242, 222, 205),
+	Cream = Color3.fromRGB(255, 244, 216),
+	Pink = Color3.fromRGB(255, 185, 207),
+	Mint = Color3.fromRGB(166, 222, 197),
+	Blue = Color3.fromRGB(173, 215, 246),
+	Purple = Color3.fromRGB(207, 185, 235),
+	Yellow = Color3.fromRGB(255, 218, 122),
+	Brown = Color3.fromRGB(162, 116, 86),
+	DarkBrown = Color3.fromRGB(112, 77, 62),
+	White = Color3.fromRGB(255, 252, 244),
+	Soil = Color3.fromRGB(135, 91, 62),
+	Leaf = Color3.fromRGB(100, 181, 120),
+	Water = Color3.fromRGB(117, 201, 234),
+}
+
+local function bilingual(english, thai)
+	return string.format("%s / %s", thai, english)
+end
+
+local function part(parent, name, size, cframe, color, material, shape)
+	local object = Instance.new("Part")
+	object.Name = name
+	object.Size = size
+	object.CFrame = cframe
+	object.Color = color
+	object.Material = material or Enum.Material.SmoothPlastic
+	object.Anchored = true
+	object.TopSurface = Enum.SurfaceType.Smooth
+	object.BottomSurface = Enum.SurfaceType.Smooth
+	object.CastShadow = true
+	if shape then
+		object.Shape = shape
+	end
+	object.Parent = parent
+	return object
+end
+
+local function billboard(adornee, text, color, size)
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "WorldLabel"
+	gui.Adornee = adornee
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
+	gui.Size = size or UDim2.fromOffset(180, 46)
+	gui.StudsOffset = Vector3.new(0, adornee.Size.Y / 2 + 2.5, 0)
+	gui.Parent = adornee
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Text"
+	label.BackgroundColor3 = Color3.fromRGB(255, 252, 244)
+	label.BackgroundTransparency = 0.08
+	label.Size = UDim2.fromScale(1, 1)
+	label.Font = Enum.Font.GothamBold
+	label.Text = text
+	label.TextColor3 = color or Color3.fromRGB(91, 71, 91)
+	label.TextScaled = true
+	label.TextWrapped = true
+	label.Parent = gui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 14)
+	corner.Parent = label
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(255, 255, 255)
+	stroke.Thickness = 3
+	stroke.Parent = label
+	return label
+end
+
+local function prompt(parent, actionText, objectText)
+	local interaction = Instance.new("ProximityPrompt")
+	interaction.Name = "TownPrompt"
+	interaction.ActionText = actionText
+	interaction.ObjectText = objectText
+	interaction.HoldDuration = 0
+	interaction.MaxActivationDistance = Config.InteractionDistance
+	interaction.RequiresLineOfSight = false
+	interaction.Style = Enum.ProximityPromptStyle.Default
+	interaction.Parent = parent
+	return interaction
+end
+
+local function modelWithPrimary(name, parent, primary)
+	local model = Instance.new("Model")
+	model.Name = name
+	model.Parent = parent
+	primary.Parent = model
+	model.PrimaryPart = primary
+	return model
+end
+
+function WorldService.new(remotes)
+	local self = setmetatable({}, WorldService)
+	self._remotes = remotes
+	self._homes = {}
+	self._homeByPlayer = {}
+	self._pets = {}
+	self._actionHandler = nil
+	self._followAccumulator = 0
+	self:_buildWorld()
+	self:_startPetFollow()
+	return self
+end
+
+function WorldService:SetActionHandler(handler)
+	self._actionHandler = handler
+end
+
+function WorldService:_runPrompt(player, action, payload, homeIndex)
+	if homeIndex and player:GetAttribute("HomeIndex") ~= homeIndex then
+		self._remotes.Toast:FireClient(player, "This garden belongs to another family.")
+		return
+	end
+	if not self._actionHandler then
+		return
+	end
+	local response = self._actionHandler(player, action, payload or {})
+	if response and response.message then
+		self._remotes.Toast:FireClient(player, response.message)
+	end
+end
+
+function WorldService:_connectPrompt(interaction, action, payload, homeIndex)
+	interaction.Triggered:Connect(function(player)
+		task.spawn(function()
+			self:_runPrompt(player, action, payload, homeIndex)
+		end)
+	end)
+end
+
+function WorldService:_building(name, position, color, width, depth)
+	local building = Instance.new("Model")
+	building.Name = name:gsub(" ", "")
+	building.Parent = self._townFolder
+
+	part(building, "Floor", Vector3.new(width + 4, 1, depth + 4), CFrame.new(position + Vector3.new(0, 0.5, 0)), COLORS.Cream, Enum.Material.WoodPlanks)
+	part(building, "Body", Vector3.new(width, 12, depth), CFrame.new(position + Vector3.new(0, 6.5, 0)), color, Enum.Material.SmoothPlastic)
+	part(building, "Roof", Vector3.new(width + 4, 2, depth + 4), CFrame.new(position + Vector3.new(0, 13.5, 0)), COLORS.White, Enum.Material.SmoothPlastic)
+	local door = part(building, "Door", Vector3.new(5, 8, 1), CFrame.new(position + Vector3.new(0, 4, -depth / 2 - 0.55)), COLORS.DarkBrown, Enum.Material.WoodPlanks)
+	part(building, "WindowLeft", Vector3.new(4, 4, 0.5), CFrame.new(position + Vector3.new(-width * 0.3, 7, -depth / 2 - 0.6)), COLORS.Blue, Enum.Material.Glass)
+	part(building, "WindowRight", Vector3.new(4, 4, 0.5), CFrame.new(position + Vector3.new(width * 0.3, 7, -depth / 2 - 0.6)), COLORS.Blue, Enum.Material.Glass)
+	billboard(door, name, Color3.fromRGB(84, 66, 91), UDim2.fromOffset(190, 48))
+	return building
+end
+
+function WorldService:_tree(position, scale)
+	scale = scale or 1
+	local tree = Instance.new("Model")
+	tree.Name = "Tree"
+	tree.Parent = self._decorFolder
+	part(tree, "Trunk", Vector3.new(2.2, 8, 2.2) * scale, CFrame.new(position + Vector3.new(0, 4 * scale, 0)), COLORS.Brown, Enum.Material.Wood)
+	part(tree, "Leaves", Vector3.new(9, 9, 9) * scale, CFrame.new(position + Vector3.new(0, 10 * scale, 0)), COLORS.Leaf, Enum.Material.Grass, Enum.PartType.Ball)
+end
+
+function WorldService:_flower(position, color)
+	local stem = part(self._decorFolder, "FlowerStem", Vector3.new(0.25, 1.5, 0.25), CFrame.new(position + Vector3.new(0, 0.75, 0)), COLORS.Leaf, Enum.Material.SmoothPlastic)
+	stem.CanCollide = false
+	local bloom = part(self._decorFolder, "Flower", Vector3.new(1.1, 1.1, 1.1), CFrame.new(position + Vector3.new(0, 1.7, 0)), color, Enum.Material.Neon, Enum.PartType.Ball)
+	bloom.CanCollide = false
+end
+
+function WorldService:_lamp(position)
+	part(self._decorFolder, "LampPost", Vector3.new(0.7, 7, 0.7), CFrame.new(position + Vector3.new(0, 3.5, 0)), COLORS.DarkBrown, Enum.Material.Metal)
+	local lightPart = part(self._decorFolder, "LampGlow", Vector3.new(2, 2, 2), CFrame.new(position + Vector3.new(0, 7.5, 0)), Color3.fromRGB(255, 237, 164), Enum.Material.Neon, Enum.PartType.Ball)
+	local light = Instance.new("PointLight")
+	light.Brightness = 0.6
+	light.Range = 16
+	light.Color = Color3.fromRGB(255, 235, 180)
+	light.Parent = lightPart
+end
+
+function WorldService:_buildPlayground(position)
+	local playground = Instance.new("Model")
+	playground.Name = "PlaygroundEquipment"
+	playground.Parent = self._townFolder
+	part(playground, "Sandbox", Vector3.new(24, 1, 18), CFrame.new(position + Vector3.new(0, 0.5, 9)), Color3.fromRGB(244, 218, 148), Enum.Material.Sand)
+	part(playground, "SlideDeck", Vector3.new(7, 1, 7), CFrame.new(position + Vector3.new(-8, 7, -5)), COLORS.Purple, Enum.Material.SmoothPlastic)
+	part(playground, "Slide", Vector3.new(5, 0.8, 14), CFrame.new(position + Vector3.new(-8, 4.2, 2)) * CFrame.Angles(math.rad(25), 0, 0), COLORS.Pink, Enum.Material.SmoothPlastic)
+	for _, x in ipairs({ -11, -5 }) do
+		part(playground, "Support", Vector3.new(0.8, 7, 0.8), CFrame.new(position + Vector3.new(x, 3.5, -8)), COLORS.Mint, Enum.Material.Metal)
+	end
+	local archLeft = part(playground, "SwingPost", Vector3.new(0.8, 10, 0.8), CFrame.new(position + Vector3.new(8, 5, -7)), COLORS.Blue, Enum.Material.Metal)
+	part(playground, "SwingPost", Vector3.new(0.8, 10, 0.8), CFrame.new(position + Vector3.new(16, 5, -7)), COLORS.Blue, Enum.Material.Metal)
+	part(playground, "SwingBar", Vector3.new(9, 0.8, 0.8), CFrame.new(position + Vector3.new(12, 10, -7)), COLORS.Blue, Enum.Material.Metal)
+	part(playground, "SwingSeat", Vector3.new(4, 0.5, 2), CFrame.new(position + Vector3.new(12, 3, -7)), COLORS.Pink, Enum.Material.WoodPlanks)
+	local carousel = part(playground, "Carousel", Vector3.new(12, 1, 12), CFrame.new(position + Vector3.new(12, 0.8, 10)), COLORS.Purple, Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
+	carousel.CFrame = CFrame.new(position + Vector3.new(12, 0.8, 10)) * CFrame.Angles(0, 0, math.rad(90))
+	part(playground, "CarouselPole", Vector3.new(0.8, 6, 0.8), CFrame.new(position + Vector3.new(12, 3.5, 10)), COLORS.Yellow, Enum.Material.Metal)
+	for index, color in ipairs({ COLORS.Pink, COLORS.Blue, COLORS.Mint }) do
+		part(playground, "PlayBall", Vector3.new(2.5, 2.5, 2.5), CFrame.new(position + Vector3.new(3 + index * 3, 2, 19)), color, Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+	end
+	for index, color in ipairs({ COLORS.Pink, COLORS.Mint, COLORS.Blue }) do
+		part(playground, "LittleTrain", Vector3.new(4, 3, 5), CFrame.new(position + Vector3.new(-1 + index * 5, 1.7, 25)), color, Enum.Material.SmoothPlastic)
+	end
+	billboard(archLeft, "PLAYGROUND", Color3.fromRGB(78, 79, 111), UDim2.fromOffset(190, 44))
+end
+
+function WorldService:_buildHome(index, baseCFrame)
+	local home = Instance.new("Model")
+	home.Name = string.format("Home%02d", index)
+	home:SetAttribute("OwnerUserId", 0)
+	home.Parent = self._homesFolder
+
+	local function localPart(name, size, offset, color, material)
+		return part(home, name, size, baseCFrame * CFrame.new(offset), color, material)
+	end
+
+	local floor = localPart("Floor", Vector3.new(18, 1, 16), Vector3.new(0, 0.5, 0), COLORS.Cream, Enum.Material.WoodPlanks)
+	local walls = {
+		localPart("BackWall", Vector3.new(18, 9, 1), Vector3.new(0, 5, 7.5), COLORS.Cream),
+		localPart("LeftWall", Vector3.new(1, 9, 15), Vector3.new(-8.5, 5, 0), COLORS.Cream),
+		localPart("RightWall", Vector3.new(1, 9, 15), Vector3.new(8.5, 5, 0), COLORS.Cream),
+		localPart("FrontLeft", Vector3.new(6, 9, 1), Vector3.new(-6, 5, -7.5), COLORS.Cream),
+		localPart("FrontRight", Vector3.new(6, 9, 1), Vector3.new(6, 5, -7.5), COLORS.Cream),
+	}
+	local roof = localPart("Roof", Vector3.new(20, 1.5, 18), Vector3.new(0, 10.2, 0), COLORS.White)
+	local door = localPart("Door", Vector3.new(5, 8, 0.6), Vector3.new(0, 4.2, -8), COLORS.Brown, Enum.Material.WoodPlanks)
+	door.CanCollide = false
+	door.Transparency = 0.18
+	local ownerLabel = billboard(door, "A cozy home", Color3.fromRGB(88, 68, 91), UDim2.fromOffset(210, 48))
+	local doorPrompt = prompt(door, bilingual("Go to my home", "ไปบ้านของฉัน"), bilingual("Home", "บ้าน"))
+	self:_connectPrompt(doorPrompt, "Teleport", { destination = "Home" })
+
+	local spawnPart = localPart("HomeSpawn", Vector3.new(5, 1, 5), Vector3.new(0, 0.5, -15), COLORS.Mint)
+	spawnPart.Transparency = 1
+	spawnPart.CanCollide = false
+	local interiorSpawn = localPart("InteriorSpawn", Vector3.new(5, 1, 3), Vector3.new(0, 0.5, -5.2), COLORS.Mint)
+	interiorSpawn.Transparency = 1
+	interiorSpawn.CanCollide = false
+
+	local furnitureFolder = Instance.new("Folder")
+	furnitureFolder.Name = "PlacedFurniture"
+	furnitureFolder.Parent = home
+
+	local gardenParts = {}
+	for slot = 1, Config.GardenSlots do
+		local row = math.floor((slot - 1) / 2)
+		local column = (slot - 1) % 2
+		local soil = localPart(
+			string.format("GardenSlot%d", slot),
+			Vector3.new(5, 1, 5),
+			Vector3.new(13 + column * 6, 0.6, -3 + row * 6),
+			COLORS.Soil,
+			Enum.Material.Ground
+		)
+		local gardenPrompt = prompt(
+			soil,
+			bilingual("Plant Daisy", "ปลูกเดซี่"),
+			bilingual(string.format("Garden patch %d", slot), string.format("แปลงสวน %d", slot))
+		)
+		self:_connectPrompt(gardenPrompt, "GardenSmart", { slot = slot }, index)
+		gardenParts[slot] = soil
+	end
+
+	local mailbox = localPart("Mailbox", Vector3.new(2, 3, 2), Vector3.new(-10, 2, -14), COLORS.Pink)
+	billboard(mailbox, string.format("Home %d", index), Color3.fromRGB(89, 71, 91), UDim2.fromOffset(120, 36))
+
+	local record = {
+		Index = index,
+		Model = home,
+		BaseCFrame = baseCFrame,
+		Floor = floor,
+		Walls = walls,
+		Roof = roof,
+		Door = door,
+		OwnerLabel = ownerLabel,
+		Spawn = spawnPart,
+		InteriorSpawn = interiorSpawn,
+		GardenParts = gardenParts,
+		FurnitureFolder = furnitureFolder,
+		Owner = nil,
+	}
+	table.insert(self._homes, record)
+end
+
+function WorldService:_buildWorld()
+	local existing = workspace:FindFirstChild("CuteFamilyTown")
+	if existing then
+		existing:Destroy()
+	end
+
+	local world = Instance.new("Folder")
+	world.Name = "CuteFamilyTown"
+	world.Parent = workspace
+	self._world = world
+
+	self._townFolder = Instance.new("Folder")
+	self._townFolder.Name = "Town"
+	self._townFolder.Parent = world
+	self._decorFolder = Instance.new("Folder")
+	self._decorFolder.Name = "Decor"
+	self._decorFolder.Parent = world
+	self._homesFolder = Instance.new("Folder")
+	self._homesFolder.Name = "PlayerHomes"
+	self._homesFolder.Parent = world
+	self._petsFolder = Instance.new("Folder")
+	self._petsFolder.Name = "Pets"
+	self._petsFolder.Parent = world
+
+	part(world, "Ground", Vector3.new(600, 2, 600), CFrame.new(0, -1, 0), COLORS.Grass, Enum.Material.Grass)
+	part(world, "MainRoadNS", Vector3.new(30, 0.4, 360), CFrame.new(0, 0.2, 0), COLORS.Road, Enum.Material.Cobblestone)
+	part(world, "MainRoadEW", Vector3.new(360, 0.4, 30), CFrame.new(0, 0.21, 0), COLORS.Road, Enum.Material.Cobblestone)
+	part(world, "TownPlaza", Vector3.new(72, 1, 72), CFrame.new(0, 0.45, 0), Color3.fromRGB(250, 229, 211), Enum.Material.Brick)
+	local fountainBase = part(world, "Fountain", Vector3.new(22, 3, 22), CFrame.new(0, 1.5, 0), COLORS.Blue, Enum.Material.Marble, Enum.PartType.Cylinder)
+	fountainBase.CFrame = CFrame.new(0, 1.5, 0) * CFrame.Angles(0, 0, math.rad(90))
+	local fountainTop = part(world, "FountainTop", Vector3.new(5, 8, 5), CFrame.new(0, 5, 0), COLORS.White, Enum.Material.Marble, Enum.PartType.Cylinder)
+	fountainTop.CFrame = CFrame.new(0, 5, 0) * CFrame.Angles(0, 0, math.rad(90))
+	billboard(fountainTop, "CUTE FAMILY TOWN", Color3.fromRGB(105, 74, 112), UDim2.fromOffset(260, 56))
+
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "TownSpawn"
+	spawn.Size = Vector3.new(10, 1, 10)
+	spawn.CFrame = CFrame.new(0, 1, 28)
+	spawn.Anchored = true
+	spawn.Transparency = 1
+	spawn.CanCollide = false
+	spawn.Neutral = true
+	spawn.Duration = 0
+	spawn.Parent = world
+
+	local cafe = self:_building("Family Cafe", Config.Waypoints.Cafe - Vector3.new(0, 4, 0), COLORS.Pink, 34, 28)
+	local counter = part(cafe, "ServiceCounter", Vector3.new(14, 4, 4), CFrame.new(Config.Waypoints.Cafe + Vector3.new(0, -2, -18)), COLORS.Brown, Enum.Material.WoodPlanks)
+	local cafePrompt = prompt(counter, bilingual("Open / serve", "เปิด / เสิร์ฟ"), bilingual("Family Cafe", "คาเฟ่ครอบครัว"))
+	self:_connectPrompt(cafePrompt, "CafeSmart", {})
+
+	local petShop = self:_building("Pet Shop", Config.Waypoints.PetShop - Vector3.new(0, 4, 0), COLORS.Mint, 32, 26)
+	local petBowl = part(petShop, "PetBowl", Vector3.new(5, 1, 5), CFrame.new(Config.Waypoints.PetShop + Vector3.new(0, -3.4, -17)), COLORS.Blue, Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
+	petBowl.CFrame = CFrame.new(Config.Waypoints.PetShop + Vector3.new(0, -3.4, -17)) * CFrame.Angles(0, 0, math.rad(90))
+	local petPrompt = prompt(petBowl, bilingual("Feed Mochi", "ให้อาหารโมจิ"), bilingual("Pet snack - 5 coins", "ขนมสัตว์เลี้ยง - 5 เหรียญ"))
+	self:_connectPrompt(petPrompt, "PetFeed", {})
+
+	local flowerShop = self:_building("Flower Shop", Config.Waypoints.FlowerShop - Vector3.new(0, 4, 0), Color3.fromRGB(244, 194, 222), 32, 26)
+	local seedCrate = part(flowerShop, "SeedCrate", Vector3.new(7, 3, 5), CFrame.new(Config.Waypoints.FlowerShop + Vector3.new(0, -2.5, -17)), COLORS.Brown, Enum.Material.WoodPlanks)
+	local seedPrompt = prompt(seedCrate, bilingual("Buy Daisy seed", "ซื้อเมล็ดเดซี่"), bilingual("15 coins", "15 เหรียญ"))
+	self:_connectPrompt(seedPrompt, "BuySeed", { seed = "Daisy" })
+
+	self:_buildPlayground(Config.Waypoints.Playground - Vector3.new(0, 4, 0))
+	self:_building("Little School", Config.Waypoints.School - Vector3.new(0, 4, 0), COLORS.Blue, 48, 30)
+
+	local lake = part(world, "Lake", Vector3.new(80, 1, 45), CFrame.new(0, 0.2, 174), COLORS.Water, Enum.Material.Glass)
+	lake.Transparency = 0.18
+	billboard(lake, "SUNNY LAKE", Color3.fromRGB(60, 117, 153), UDim2.fromOffset(170, 42))
+	part(world, "Beach", Vector3.new(65, 1, 95), CFrame.new(176, 0.2, 0), Color3.fromRGB(245, 220, 164), Enum.Material.Sand)
+
+	for index = 1, 22 do
+		local angle = index * 2.399
+		local radius = 25 + (index % 4) * 13
+		self:_flower(Vector3.new(math.cos(angle) * radius, 0.5, math.sin(angle) * radius), ({ COLORS.Pink, COLORS.Purple, COLORS.White })[(index % 3) + 1])
+	end
+	for index = 1, 14 do
+		self:_tree(Vector3.new(-185 + (index % 4) * 18, 0, -55 + math.floor(index / 4) * 28), 0.85 + (index % 3) * 0.1)
+	end
+	for _, position in ipairs({
+		Vector3.new(-28, 0, -28), Vector3.new(28, 0, -28), Vector3.new(-28, 0, 28), Vector3.new(28, 0, 28),
+		Vector3.new(-15, 0, -80), Vector3.new(15, 0, -80), Vector3.new(-15, 0, 80), Vector3.new(15, 0, 80),
+	}) do
+		self:_lamp(position)
+	end
+
+	for index = 1, Config.HomeCount do
+		local angle = ((index - 1) / Config.HomeCount) * math.pi * 2
+		local position = Vector3.new(math.cos(angle) * 235, 0, math.sin(angle) * 235)
+		local facing = CFrame.lookAt(position, Vector3.new(0, 0, 0))
+		self:_buildHome(index, facing)
+	end
+end
+
+function WorldService:AssignHome(player)
+	if self._homeByPlayer[player] then
+		return self._homeByPlayer[player]
+	end
+	for _, record in ipairs(self._homes) do
+		if not record.Owner then
+			record.Owner = player
+			record.Model:SetAttribute("OwnerUserId", player.UserId)
+			record.OwnerLabel.Text = string.format("%s's cozy home", player.DisplayName)
+			player:SetAttribute("HomeIndex", record.Index)
+			self._homeByPlayer[player] = record
+			return record
+		end
+	end
+	warn(string.format("No home plot available for %s", player.Name))
+	return nil
+end
+
+function WorldService:ReleaseHome(player)
+	local record = self._homeByPlayer[player]
+	if record then
+		record.Owner = nil
+		record.Model:SetAttribute("OwnerUserId", 0)
+		record.OwnerLabel.Text = "A cozy home"
+		record.FurnitureFolder:ClearAllChildren()
+		for _, gardenPart in ipairs(record.GardenParts) do
+			local visual = gardenPart:FindFirstChild("PlantVisual")
+			if visual then
+				visual:Destroy()
+			end
+			local interaction = gardenPart:FindFirstChild("TownPrompt")
+			if interaction then
+				interaction.ActionText = bilingual("Plant Daisy", "ปลูกเดซี่")
+			end
+		end
+	end
+	local pet = self._pets[player]
+	if pet then
+		pet:Destroy()
+		self._pets[player] = nil
+	end
+	self._homeByPlayer[player] = nil
+	player:SetAttribute("HomeIndex", nil)
+end
+
+function WorldService:_homeColor(name)
+	for _, entry in ipairs(Config.HomeColors) do
+		if entry.Name == name then
+			return entry.Color
+		end
+	end
+	return Config.HomeColors[1].Color
+end
+
+function WorldService:_makeFurniture(parent, itemId, cframe)
+	local info = Catalog.Furniture[itemId]
+	if not info then
+		return
+	end
+	local furniture = Instance.new("Model")
+	furniture.Name = itemId
+	furniture.Parent = parent
+
+	if info.Kind == "Chair" then
+		part(furniture, "Seat", Vector3.new(3.5, 0.7, 3.5), cframe * CFrame.new(0, 2.2, 0), info.Color, Enum.Material.Fabric)
+		part(furniture, "Back", Vector3.new(3.5, 4, 0.7), cframe * CFrame.new(0, 4, 1.4), info.Color, Enum.Material.Fabric)
+		for _, offset in ipairs({ Vector3.new(-1.3, 1, -1.3), Vector3.new(1.3, 1, -1.3), Vector3.new(-1.3, 1, 1.3), Vector3.new(1.3, 1, 1.3) }) do
+			part(furniture, "Leg", Vector3.new(0.4, 2, 0.4), cframe * CFrame.new(offset), COLORS.Brown, Enum.Material.Wood)
+		end
+	elseif info.Kind == "Lamp" then
+		part(furniture, "Base", Vector3.new(2, 0.5, 2), cframe * CFrame.new(0, 0.4, 0), COLORS.Brown, Enum.Material.Metal)
+		part(furniture, "Pole", Vector3.new(0.4, 5, 0.4), cframe * CFrame.new(0, 3, 0), COLORS.Brown, Enum.Material.Metal)
+		local glow = part(furniture, "Glow", Vector3.new(2.7, 2.7, 2.7), cframe * CFrame.new(0, 6, 0), info.Color, Enum.Material.Neon, Enum.PartType.Ball)
+		local light = Instance.new("PointLight")
+		light.Brightness = 0.5
+		light.Range = 12
+		light.Parent = glow
+	elseif info.Kind == "Table" then
+		part(furniture, "Top", Vector3.new(5, 0.7, 5), cframe * CFrame.new(0, 3, 0), info.Color, Enum.Material.WoodPlanks)
+		part(furniture, "Leg", Vector3.new(1, 3, 1), cframe * CFrame.new(0, 1.5, 0), COLORS.Brown, Enum.Material.Wood)
+	elseif info.Kind == "Bed" then
+		part(furniture, "Frame", Vector3.new(5, 1, 8), cframe * CFrame.new(0, 1, 0), COLORS.White, Enum.Material.WoodPlanks)
+		part(furniture, "Blanket", Vector3.new(4.6, 1.1, 7.5), cframe * CFrame.new(0, 1.8, 0), info.Color, Enum.Material.Fabric)
+		part(furniture, "Pillow", Vector3.new(3.5, 0.8, 1.8), cframe * CFrame.new(0, 2.7, 2.4), COLORS.White, Enum.Material.Fabric)
+	elseif info.Kind == "Plant" then
+		part(furniture, "Pot", Vector3.new(2.5, 2, 2.5), cframe * CFrame.new(0, 1, 0), Color3.fromRGB(215, 143, 107), Enum.Material.SmoothPlastic)
+		part(furniture, "Leaves", Vector3.new(4, 4, 4), cframe * CFrame.new(0, 4, 0), info.Color, Enum.Material.Grass, Enum.PartType.Ball)
+	end
+end
+
+function WorldService:RefreshHome(player, data)
+	local home = self._homeByPlayer[player]
+	if not home then
+		return
+	end
+	local homeColor = self:_homeColor(data.Home.Paint)
+	for _, wall in ipairs(home.Walls) do
+		wall.Color = homeColor
+	end
+	home.FurnitureFolder:ClearAllChildren()
+
+	for index, entry in ipairs(data.Home.Furniture) do
+		if index > Config.MaxFurniture then
+			break
+		end
+		local column = (index - 1) % 3
+		local row = math.floor((index - 1) / 3)
+		local localPosition = Vector3.new(-5 + column * 5, 0.5, -4 + row * 4)
+		self:_makeFurniture(home.FurnitureFolder, entry.Id, home.BaseCFrame * CFrame.new(localPosition))
+	end
+end
+
+function WorldService:RefreshGarden(player, data)
+	local home = self._homeByPlayer[player]
+	if not home then
+		return
+	end
+	for index, gardenPart in ipairs(home.GardenParts) do
+		local old = gardenPart:FindFirstChild("PlantVisual")
+		if old then
+			old:Destroy()
+		end
+		local interaction = gardenPart:FindFirstChild("TownPrompt")
+		local slot = data.Garden.Slots[index]
+		if slot and slot.State == "Planted" and Catalog.Seeds[slot.Seed] then
+			local seed = Catalog.Seeds[slot.Seed]
+			local visual = Instance.new("Model")
+			visual.Name = "PlantVisual"
+			visual.Parent = gardenPart
+			local stemHeight = slot.Watered and 3.5 or 1.5
+			local stem = part(visual, "Stem", Vector3.new(0.45, stemHeight, 0.45), gardenPart.CFrame * CFrame.new(0, 0.5 + stemHeight / 2, 0), COLORS.Leaf, Enum.Material.Grass)
+			stem.CanCollide = false
+			local bloom = part(visual, "Bloom", Vector3.new(2.4, 2.4, 2.4), gardenPart.CFrame * CFrame.new(0, 1 + stemHeight, 0), seed.Color, slot.Watered and Enum.Material.Neon or Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+			bloom.CanCollide = false
+			if interaction then
+				if not slot.Watered then
+					interaction.ActionText = bilingual("Water flower", "รดน้ำดอกไม้")
+				elseif os.time() - slot.PlantedAt >= seed.GrowSeconds then
+					interaction.ActionText = bilingual("Pick flower", "เก็บดอกไม้")
+				else
+					interaction.ActionText = bilingual("Check flower", "ดูดอกไม้")
+				end
+				interaction.ObjectText = bilingual(seed.DisplayName, seed.DisplayNameThai)
+			end
+		elseif interaction then
+			interaction.ActionText = bilingual("Plant Daisy", "ปลูกเดซี่")
+			interaction.ObjectText = bilingual(string.format("Garden patch %d", index), string.format("แปลงสวน %d", index))
+		end
+	end
+end
+
+function WorldService:_createPet(player)
+	local root = part(self._petsFolder, "BodyRoot", Vector3.new(3.5, 3, 4.5), CFrame.new(0, -100, 0), Color3.fromRGB(247, 205, 149), Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+	root.CanCollide = false
+	local pet = modelWithPrimary(string.format("%s_Pet", player.Name), self._petsFolder, root)
+
+	local function petPart(name, size, offset, color, shape)
+		local object = part(pet, name, size, root.CFrame * CFrame.new(offset), color, Enum.Material.SmoothPlastic, shape)
+		object.CanCollide = false
+		return object
+	end
+	petPart("Head", Vector3.new(3.2, 3.2, 3.2), Vector3.new(0, 1.4, -2), root.Color, Enum.PartType.Ball)
+	petPart("EarLeft", Vector3.new(1, 1.5, 1), Vector3.new(-1, 3, -2), Color3.fromRGB(228, 165, 133))
+	petPart("EarRight", Vector3.new(1, 1.5, 1), Vector3.new(1, 3, -2), Color3.fromRGB(228, 165, 133))
+	petPart("Tail", Vector3.new(0.7, 0.7, 4), Vector3.new(0, 1.2, 3.1), root.Color)
+	petPart("Nose", Vector3.new(0.5, 0.5, 0.5), Vector3.new(0, 1.2, -3.5), Color3.fromRGB(105, 76, 78), Enum.PartType.Ball)
+	billboard(root, "Mochi", Color3.fromRGB(91, 72, 91), UDim2.fromOffset(130, 36))
+	pet:SetAttribute("CelebrateUntil", 0)
+	self._pets[player] = pet
+	return pet
+end
+
+function WorldService:RefreshPet(player, data)
+	local pet = self._pets[player]
+	if not pet or not pet.Parent then
+		pet = self:_createPet(player)
+	end
+	local root = pet.PrimaryPart
+	local labelGui = root and root:FindFirstChild("WorldLabel")
+	local label = labelGui and labelGui:FindFirstChild("Text")
+	if label then
+		label.Text = string.format("%s  Lv.%d", data.Pet.Name, data.Pet.Level)
+	end
+end
+
+function WorldService:PetCelebrate(player)
+	local pet = self._pets[player]
+	if pet then
+		pet:SetAttribute("CelebrateUntil", os.clock() + 1.5)
+	end
+end
+
+function WorldService:_startPetFollow()
+	RunService.Heartbeat:Connect(function(deltaTime)
+		self._followAccumulator += deltaTime
+		if self._followAccumulator < 0.1 then
+			return
+		end
+		self._followAccumulator = 0
+		for player, pet in pairs(self._pets) do
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root and pet.Parent and pet.PrimaryPart then
+				local targetPosition = root.Position - root.CFrame.LookVector * 5 + root.CFrame.RightVector * 3
+				local celebrating = (pet:GetAttribute("CelebrateUntil") or 0) > os.clock()
+				if celebrating then
+					targetPosition += Vector3.new(0, math.abs(math.sin(os.clock() * 10)) * 3, 0)
+				end
+				local target = CFrame.lookAt(targetPosition, root.Position)
+				local current = pet:GetPivot()
+				if (current.Position - targetPosition).Magnitude > 80 then
+					pet:PivotTo(target)
+				else
+					pet:PivotTo(current:Lerp(target, 0.22))
+				end
+			end
+		end
+	end)
+end
+
+function WorldService:ApplyOutfit(player, data)
+	local character = player.Character
+	local outfit = Catalog.Outfits[data.Wardrobe.Equipped]
+	if not character or not outfit then
+		return
+	end
+	local bodyColors = character:FindFirstChildOfClass("BodyColors") or Instance.new("BodyColors")
+	bodyColors.Name = "FamilyTownOutfit"
+	bodyColors.TorsoColor3 = outfit.Torso
+	bodyColors.LeftArmColor3 = outfit.Arms
+	bodyColors.RightArmColor3 = outfit.Arms
+	bodyColors.LeftLegColor3 = outfit.Legs
+	bodyColors.RightLegColor3 = outfit.Legs
+	bodyColors.Parent = character
+
+	local highlight = character:FindFirstChild("FamilyTownStyle") or Instance.new("Highlight")
+	highlight.Name = "FamilyTownStyle"
+	highlight.Adornee = character
+	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+	highlight.FillColor = outfit.Torso
+	highlight.FillTransparency = 0.92
+	highlight.OutlineColor = outfit.Torso:Lerp(Color3.new(1, 1, 1), 0.25)
+	highlight.OutlineTransparency = 0.18
+	highlight.Parent = character
+end
+
+function WorldService:Teleport(player, destination)
+	local target = Config.Waypoints[destination]
+	local character = player.Character
+	if target and character then
+		character:PivotTo(CFrame.new(target + Vector3.new(0, 3, 0)))
+	end
+end
+
+function WorldService:TeleportHome(player)
+	local home = self._homeByPlayer[player]
+	local character = player.Character
+	if home and character then
+		local destination = home.InteriorSpawn or home.Spawn
+		character:PivotTo(destination.CFrame + Vector3.new(0, 3, 0))
+	end
+end
+
+function WorldService:ShowCafeCustomer(player)
+	local base = Config.Waypoints.Cafe + Vector3.new(math.random(-6, 6), -1, -18)
+	local root = part(self._townFolder, "HappyGuest", Vector3.new(2.5, 4, 2.5), CFrame.new(base), COLORS.Purple, Enum.Material.SmoothPlastic)
+	root.CanCollide = false
+	local guest = modelWithPrimary("CafeGuest", self._townFolder, root)
+	local head = part(guest, "Head", Vector3.new(2.5, 2.5, 2.5), CFrame.new(base + Vector3.new(0, 3, 0)), Color3.fromRGB(255, 224, 189), Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+	head.CanCollide = false
+	billboard(head, string.format("Thank you, %s!", player.DisplayName), Color3.fromRGB(91, 70, 94), UDim2.fromOffset(190, 42))
+	Debris:AddItem(guest, 3)
+end
+
+return WorldService
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer" referent="14">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterPlayerScripts" referent="15">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="LocalScript" referent="16">
+        <Properties>
+          <string name="Name">Client</string>
+          <string name="Source"><![CDATA[local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Catalog = require(Shared:WaitForChild("Catalog"))
+local Config = require(Shared:WaitForChild("Config"))
+local RemoteNames = require(Shared:WaitForChild("RemoteNames"))
+
+local UI = script.Parent:WaitForChild("UI")
+local Components = require(UI:WaitForChild("Components"))
+local Theme = require(UI:WaitForChild("Theme"))
+
+local remoteFolder = ReplicatedStorage:WaitForChild(RemoteNames.Folder)
+local requestRemote = remoteFolder:WaitForChild(RemoteNames.Request)
+local stateChanged = remoteFolder:WaitForChild(RemoteNames.StateChanged)
+local toastRemote = remoteFolder:WaitForChild(RemoteNames.Toast)
+
+local state
+local currentMenu = "Home"
+local requestBusy = false
+local navButtons = {}
+
+local function bilingual(english, thai)
+	return string.format("%s\n%s", thai, english)
+end
+
+local NAV_THAI = {
+	Home = "บ้าน",
+	Garden = "สวน",
+	Pet = "สัตว์เลี้ยง",
+	Cafe = "คาเฟ่",
+	Style = "แต่งตัว",
+	Map = "แผนที่",
+}
+
+local DESTINATION_THAI = {
+	Town = "กลางเมือง",
+	Cafe = "คาเฟ่",
+	PetShop = "ร้านสัตว์เลี้ยง",
+	FlowerShop = "ร้านดอกไม้",
+	Playground = "สนามเด็กเล่น",
+	School = "โรงเรียน",
+	Park = "สวนสาธารณะ",
+	Lake = "ทะเลสาบ",
+	Beach = "ชายหาด",
+	Forest = "ป่า",
+}
+
+local HOME_COLOR_THAI = {
+	Cream = "ครีม",
+	Blossom = "ชมพูดอกไม้",
+	Mint = "มิ้นต์",
+	Sky = "ฟ้า",
+	Lavender = "ลาเวนเดอร์",
+}
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "FamilyTownUI"
+gui.DisplayOrder = 10
+gui.IgnoreGuiInset = false
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.AnchorPoint = Vector2.new(0.5, 0)
+topBar.BackgroundTransparency = 1
+topBar.Position = UDim2.new(0.5, 0, 0, 12)
+topBar.Size = UDim2.new(1, -24, 0, 58)
+topBar.Parent = gui
+
+local coinsPill = Instance.new("Frame")
+coinsPill.Name = "Coins"
+coinsPill.BackgroundColor3 = Theme.Colors.Cream
+coinsPill.Size = UDim2.fromOffset(150, 52)
+coinsPill.Parent = topBar
+Components.corner(coinsPill)
+Components.stroke(coinsPill, Theme.Colors.White, 3)
+Components.shadow(coinsPill)
+
+local coinsLabel = Components.label(coinsPill, "เหรียญ 500\nCoins 500", UDim2.new(1, -20, 1, 0), UDim2.fromOffset(14, 0), 12, true)
+coinsLabel.TextColor3 = Theme.Colors.Ink
+
+local giftButton = Instance.new("TextButton")
+giftButton.Name = "DailyGift"
+giftButton.AnchorPoint = Vector2.new(1, 0)
+giftButton.AutoButtonColor = false
+giftButton.BackgroundColor3 = Theme.Colors.Yellow
+giftButton.Position = UDim2.fromScale(1, 0)
+giftButton.Size = UDim2.fromOffset(150, 52)
+giftButton.Font = Enum.Font.GothamBold
+giftButton.Text = bilingual("DAILY GIFT", "ของขวัญรายวัน")
+giftButton.TextColor3 = Theme.Colors.Ink
+giftButton.TextSize = 11
+giftButton.TextWrapped = true
+giftButton.Parent = topBar
+Components.corner(giftButton)
+Components.stroke(giftButton, Theme.Colors.White, 3)
+Components.shadow(giftButton)
+
+local questPill = Instance.new("Frame")
+questPill.Name = "Quest"
+questPill.AnchorPoint = Vector2.new(0.5, 0)
+questPill.BackgroundColor3 = Theme.Colors.White
+questPill.BackgroundTransparency = 0.06
+questPill.Position = UDim2.new(0.5, 0, 0, 76)
+questPill.Size = UDim2.new(1, -32, 0, 46)
+questPill.Parent = gui
+Components.corner(questPill, Theme.SmallCorner)
+Components.stroke(questPill, Theme.Colors.Purple, 2, 0.25)
+local questConstraint = Instance.new("UISizeConstraint")
+questConstraint.MaxSize = Vector2.new(560, 46)
+questConstraint.Parent = questPill
+local questLabel = Components.label(questPill, "กำลังโหลดภารกิจวันนี้...\nToday's quest is loading...", UDim2.new(1, -24, 1, 0), UDim2.fromOffset(12, 0), 11, true)
+questLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+local panel = Instance.new("Frame")
+panel.Name = "ActivityPanel"
+panel.AnchorPoint = Vector2.new(0.5, 0.5)
+panel.BackgroundColor3 = Theme.Colors.Cream
+panel.Position = UDim2.new(0.5, 0, 0.51, 0)
+panel.Size = UDim2.new(0.9, 0, 0.65, 0)
+panel.Visible = false
+panel.Parent = gui
+Components.corner(panel)
+Components.stroke(panel, Theme.Colors.White, 3)
+Components.shadow(panel)
+
+local panelConstraint = Instance.new("UISizeConstraint")
+panelConstraint.MinSize = Vector2.new(300, 330)
+panelConstraint.MaxSize = Vector2.new(540, 600)
+panelConstraint.Parent = panel
+
+local panelTitle = Components.label(panel, "MY HOME", UDim2.new(1, -76, 0, 62), UDim2.fromOffset(22, 0), 24, true)
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "Close"
+closeButton.AnchorPoint = Vector2.new(1, 0)
+closeButton.AutoButtonColor = false
+closeButton.BackgroundColor3 = Theme.Colors.Pink
+closeButton.Position = UDim2.new(1, -12, 0, 10)
+closeButton.Size = UDim2.fromOffset(44, 44)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Text = "X"
+closeButton.TextColor3 = Theme.Colors.White
+closeButton.TextSize = 19
+closeButton.Parent = panel
+Components.corner(closeButton, UDim.new(1, 0))
+
+local divider = Instance.new("Frame")
+divider.BackgroundColor3 = Theme.Colors.Purple
+divider.BackgroundTransparency = 0.72
+divider.BorderSizePixel = 0
+divider.Position = UDim2.fromOffset(18, 60)
+divider.Size = UDim2.new(1, -36, 0, 2)
+divider.Parent = panel
+
+local body = Instance.new("ScrollingFrame")
+body.Name = "Body"
+body.AutomaticCanvasSize = Enum.AutomaticSize.Y
+body.BackgroundTransparency = 1
+body.BorderSizePixel = 0
+body.CanvasSize = UDim2.fromOffset(0, 0)
+body.Position = UDim2.fromOffset(18, 72)
+body.ScrollBarImageColor3 = Theme.Colors.Purple
+body.ScrollBarThickness = 6
+body.Size = UDim2.new(1, -36, 1, -88)
+body.Parent = panel
+
+local nav = Instance.new("Frame")
+nav.Name = "Navigation"
+nav.AnchorPoint = Vector2.new(0.5, 1)
+nav.BackgroundColor3 = Theme.Colors.Cream
+nav.Position = UDim2.new(0.5, 0, 1, -12)
+nav.Size = UDim2.new(1, -24, 0, 68)
+nav.Parent = gui
+Components.corner(nav)
+Components.stroke(nav, Theme.Colors.White, 3)
+Components.shadow(nav)
+
+local navConstraint = Instance.new("UISizeConstraint")
+navConstraint.MaxSize = Vector2.new(720, 68)
+navConstraint.Parent = nav
+
+local navPadding = Instance.new("UIPadding")
+navPadding.PaddingLeft = UDim.new(0, 8)
+navPadding.PaddingRight = UDim.new(0, 8)
+navPadding.PaddingTop = UDim.new(0, 8)
+navPadding.PaddingBottom = UDim.new(0, 8)
+navPadding.Parent = nav
+
+local navLayout = Instance.new("UIListLayout")
+navLayout.FillDirection = Enum.FillDirection.Horizontal
+navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+navLayout.Padding = UDim.new(0, 6)
+navLayout.SortOrder = Enum.SortOrder.LayoutOrder
+navLayout.Parent = nav
+
+local toast = Instance.new("TextLabel")
+toast.Name = "Toast"
+toast.AnchorPoint = Vector2.new(0.5, 1)
+toast.BackgroundColor3 = Theme.Colors.Ink
+toast.BackgroundTransparency = 1
+toast.Position = UDim2.new(0.5, 0, 1, -92)
+toast.Size = UDim2.new(0.8, 0, 0, 52)
+toast.Font = Enum.Font.GothamBold
+toast.Text = ""
+toast.TextColor3 = Theme.Colors.White
+toast.TextSize = 17
+toast.TextTransparency = 1
+toast.TextWrapped = true
+toast.Visible = false
+toast.ZIndex = 50
+toast.Parent = gui
+Components.corner(toast)
+local toastConstraint = Instance.new("UISizeConstraint")
+toastConstraint.MaxSize = Vector2.new(500, 52)
+toastConstraint.Parent = toast
+
+local loading = Components.label(gui, "กำลังโหลดเมืองแสนอบอุ่น...\nLoading your cozy town...", UDim2.new(1, -40, 0, 70), UDim2.new(0, 20, 0.5, -35), 16, true)
+loading.TextXAlignment = Enum.TextXAlignment.Center
+loading.ZIndex = 80
+
+local onboarding = Instance.new("Frame")
+onboarding.Name = "Welcome"
+onboarding.BackgroundColor3 = Theme.Colors.Ink
+onboarding.BackgroundTransparency = 0.28
+onboarding.Size = UDim2.fromScale(1, 1)
+onboarding.Visible = false
+onboarding.ZIndex = 100
+onboarding.Parent = gui
+
+local welcomeCard = Instance.new("Frame")
+welcomeCard.AnchorPoint = Vector2.new(0.5, 0.5)
+welcomeCard.BackgroundColor3 = Theme.Colors.Cream
+welcomeCard.Position = UDim2.fromScale(0.5, 0.5)
+welcomeCard.Size = UDim2.new(0.86, 0, 0, 390)
+welcomeCard.ZIndex = 101
+welcomeCard.Parent = onboarding
+Components.corner(welcomeCard, UDim.new(0, 24))
+Components.stroke(welcomeCard, Theme.Colors.White, 4)
+local welcomeConstraint = Instance.new("UISizeConstraint")
+welcomeConstraint.MaxSize = Vector2.new(480, 390)
+welcomeConstraint.Parent = welcomeCard
+
+local welcomeTitle = Components.label(welcomeCard, "ยินดีต้อนรับสู่ Family Town!\nWelcome to Family Town!", UDim2.new(1, -40, 0, 74), UDim2.fromOffset(20, 16), 20, true)
+welcomeTitle.TextColor3 = Theme.Colors.PinkDark
+welcomeTitle.TextXAlignment = Enum.TextXAlignment.Center
+local welcomeText = Components.label(
+	welcomeCard,
+	"1. บ้านและสวนของคุณพร้อมแล้ว\nYour home and garden are ready.\n\n2. ดูแลโมจิและเสิร์ฟลูกค้าในคาเฟ่\nCare for Mochi and serve cafe guests.\n\n3. หาเหรียญ แต่งบ้าน และออกสำรวจ!\nEarn coins, decorate, and explore!",
+	UDim2.new(1, -56, 0, 210),
+	UDim2.fromOffset(28, 92),
+	14,
+	false
+)
+welcomeText.TextYAlignment = Enum.TextYAlignment.Top
+welcomeText.ZIndex = 102
+
+local startButton = Instance.new("TextButton")
+startButton.AnchorPoint = Vector2.new(0.5, 1)
+startButton.AutoButtonColor = false
+startButton.BackgroundColor3 = Theme.Colors.Mint
+startButton.Position = UDim2.new(0.5, 0, 1, -24)
+startButton.Size = UDim2.new(1, -56, 0, 62)
+startButton.Font = Enum.Font.GothamBold
+startButton.Text = bilingual("LET'S PLAY!", "เริ่มเล่น!")
+startButton.TextColor3 = Theme.Colors.White
+startButton.TextSize = 15
+startButton.TextWrapped = true
+startButton.ZIndex = 102
+startButton.Parent = welcomeCard
+Components.corner(startButton)
+Components.stroke(startButton, Theme.Colors.White, 3)
+
+local toastSequence = 0
+local function showToast(message, good)
+	if type(message) ~= "string" or message == "" or message == "Ready" then
+		return
+	end
+	toastSequence += 1
+	local sequence = toastSequence
+	toast.Text = message
+	toast.BackgroundColor3 = good == false and Theme.Colors.Red or Theme.Colors.Ink
+	toast.Visible = true
+	TweenService:Create(toast, TweenInfo.new(0.18), { BackgroundTransparency = 0.08, TextTransparency = 0 }):Play()
+	task.delay(2.6, function()
+		if toastSequence == sequence and toast.Parent then
+			local hide = TweenService:Create(toast, TweenInfo.new(0.2), { BackgroundTransparency = 1, TextTransparency = 1 })
+			hide:Play()
+			hide.Completed:Wait()
+			if toastSequence == sequence then
+				toast.Visible = false
+			end
+		end
+	end)
+end
+
+local renderMenu
+local function applyState(newState)
+	if type(newState) ~= "table" then
+		return
+	end
+	state = newState
+	loading.Visible = false
+	coinsLabel.Text = string.format("เหรียญ %d\nCoins %d", state.Coins or 0, state.Coins or 0)
+	local daily = state.Daily or {}
+	giftButton.Text = daily.CanClaim
+		and bilingual("DAILY GIFT!", "รับของขวัญ!")
+		or bilingual(string.format("STREAK %d", daily.Streak or 0), string.format("ต่อเนื่อง %d วัน", daily.Streak or 0))
+	giftButton.BackgroundColor3 = daily.CanClaim and Theme.Colors.Yellow or Theme.Colors.Mint
+	local quest = daily.Quest
+	if quest then
+		local thaiDone = quest.Completed and "  สำเร็จ!" or ""
+		local englishDone = quest.Completed and "  DONE!" or ""
+		questLabel.Text = string.format(
+			"วันนี้: %s  %d/%d%s\nTODAY: %s  %d/%d%s",
+			quest.DescriptionThai or quest.Description,
+			quest.Progress,
+			quest.Target,
+			thaiDone,
+			quest.Description,
+			quest.Progress,
+			quest.Target,
+			englishDone
+		)
+	end
+	if panel.Visible and renderMenu then
+		renderMenu(currentMenu)
+	end
+	if state.Settings and not state.Settings.Onboarded then
+		onboarding.Visible = true
+	end
+end
+
+local function invoke(action, payload, silent)
+	if requestBusy and not silent then
+		return
+	end
+	if not silent then
+		requestBusy = true
+	end
+	task.spawn(function()
+		local success, response = pcall(function()
+			return requestRemote:InvokeServer(action, payload or {})
+		end)
+		if not silent then
+			requestBusy = false
+		end
+		if success and type(response) == "table" then
+			if response.state then
+				applyState(response.state)
+			end
+			if not silent then
+				showToast(response.message, response.ok)
+			end
+		elseif not silent then
+			showToast("The town is taking a little nap. Try again!", false)
+		end
+	end)
+end
+
+local function resetBody()
+	body:ClearAllChildren()
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 4)
+	padding.PaddingRight = UDim.new(0, 10)
+	padding.PaddingTop = UDim.new(0, 4)
+	padding.PaddingBottom = UDim.new(0, 16)
+	padding.Parent = body
+	local layout = Components.list(body, 10)
+	return layout
+end
+
+local order = 0
+local function nextOrder()
+	order += 1
+	return order
+end
+
+local function addHeading(text)
+	local label = Components.label(body, text, UDim2.new(1, 0, 0, 46), nil, 14, true)
+	label.LayoutOrder = nextOrder()
+	label.TextColor3 = Theme.Colors.PinkDark
+	return label
+end
+
+local function addText(text, height)
+	local label = Components.label(body, text, UDim2.new(1, 0, 0, height or 58), nil, 12, false)
+	label.LayoutOrder = nextOrder()
+	label.TextColor3 = Theme.Colors.Muted
+	label.TextYAlignment = Enum.TextYAlignment.Top
+	return label
+end
+
+local function addButton(text, color, action, payload)
+	local button = Components.button(body, text, color, function()
+		invoke(action, payload)
+	end)
+	button.LayoutOrder = nextOrder()
+	return button
+end
+
+local MENU_COLORS = {
+	Home = Theme.Colors.Pink,
+	Garden = Theme.Colors.Mint,
+	Pet = Theme.Colors.Purple,
+	Cafe = Theme.Colors.Yellow,
+	Style = Theme.Colors.Blue,
+	Map = Theme.Colors.Mint,
+}
+
+renderMenu = function(menu)
+	if not state then
+		return
+	end
+	currentMenu = menu
+	panel.Visible = true
+	local englishTitle = menu == "Style" and "DRESS UP" or string.upper(menu)
+	panelTitle.Text = bilingual(englishTitle, NAV_THAI[menu])
+	panelTitle.TextSize = 14
+	order = 0
+	resetBody()
+	for name, button in pairs(navButtons) do
+		button.BackgroundColor3 = name == menu and MENU_COLORS[name] or Theme.Colors.White
+		button.TextColor3 = name == menu and Theme.Colors.White or Theme.Colors.Ink
+	end
+
+	if menu == "Home" then
+		addHeading(bilingual(string.format("Your %s home", state.Home.Paint), string.format("บ้านสี%sของคุณ", HOME_COLOR_THAI[state.Home.Paint] or state.Home.Paint)))
+		addText(bilingual("Paint it, place cozy furniture, and make it yours.", "ทาสี วางเฟอร์นิเจอร์น่ารัก และแต่งบ้านในแบบของคุณ"))
+		addButton(bilingual("Paint my home", "ทาสีบ้านของฉัน"), Theme.Colors.Pink, "PaintHome", {})
+		addHeading(bilingual(
+			string.format("Home box (%d/%d placed)", #state.Home.Furniture, Config.MaxFurniture),
+			string.format("กล่องของแต่งบ้าน (วางแล้ว %d/%d)", #state.Home.Furniture, Config.MaxFurniture)
+		))
+		if #state.Home.Furniture > 0 then
+			addButton(bilingual("Pack away the last item", "เก็บของชิ้นล่าสุด"), Theme.Colors.Blue, "RemoveFurniture", {})
+		end
+		for _, itemId in ipairs(Catalog.FurnitureOrder) do
+			local item = Catalog.Furniture[itemId]
+			local owned = state.Home.OwnedFurniture[itemId] or 0
+			local placed = 0
+			for _, entry in ipairs(state.Home.Furniture) do
+				if entry.Id == itemId then
+					placed += 1
+				end
+			end
+			if owned > placed then
+				addButton(
+					bilingual(
+						string.format("Place %s (%d ready)", item.DisplayName, owned - placed),
+						string.format("วาง%s (พร้อมใช้ %d ชิ้น)", item.DisplayNameThai, owned - placed)
+					),
+					item.Color,
+					"PlaceFurniture",
+					{ item = itemId }
+				)
+			end
+		end
+		addHeading(bilingual("Furniture shop", "ร้านเฟอร์นิเจอร์"))
+		for _, itemId in ipairs(Catalog.FurnitureOrder) do
+			local item = Catalog.Furniture[itemId]
+			addButton(
+				bilingual(
+					string.format("Buy %s - %d coins", item.DisplayName, item.Price),
+					string.format("ซื้อ%s - %d เหรียญ", item.DisplayNameThai, item.Price)
+				),
+				Theme.Colors.Purple,
+				"BuyFurniture",
+				{ item = itemId }
+			)
+		end
+	elseif menu == "Garden" then
+		addHeading(bilingual("Your flower patches", "แปลงดอกไม้ของคุณ"))
+		addText(bilingual("Plant, water, wait, then pick flowers for coins.", "ปลูก รดน้ำ รอสักครู่ แล้วเก็บดอกไม้เพื่อรับเหรียญ"))
+		for index, slot in ipairs(state.Garden.Slots) do
+			if slot.State == "Empty" then
+				addHeading(bilingual(string.format("Patch %d is ready", index), string.format("แปลง %d พร้อมปลูก", index)))
+				local hasSeed = false
+				for _, seedId in ipairs(Catalog.SeedOrder) do
+					local count = state.Garden.Seeds[seedId] or 0
+					if count > 0 then
+						hasSeed = true
+						local seed = Catalog.Seeds[seedId]
+						addButton(
+							bilingual(
+								string.format("Plant %s (%d seeds)", seed.DisplayName, count),
+								string.format("ปลูก%s (มี %d เมล็ด)", seed.DisplayNameThai, count)
+							),
+							seed.Color,
+							"GardenPlant",
+							{ slot = index, seed = seedId }
+						)
+					end
+				end
+				if not hasSeed then
+					addText(bilingual("Buy a seed below to use this patch.", "ซื้อเมล็ดด้านล่างเพื่อใช้แปลงนี้"), 46)
+				end
+			elseif not slot.Watered then
+				local seed = Catalog.Seeds[slot.Seed]
+				addButton(
+					bilingual(
+						string.format("Patch %d: Water %s", index, seed.DisplayName),
+						string.format("แปลง %d: รดน้ำ%s", index, seed.DisplayNameThai)
+					),
+					Theme.Colors.Blue,
+					"GardenWater",
+					{ slot = index }
+				)
+			elseif slot.Ready then
+				local seed = Catalog.Seeds[slot.Seed]
+				addButton(
+					bilingual(
+						string.format("Patch %d: Pick %s!", index, seed.DisplayName),
+						string.format("แปลง %d: เก็บ%s!", index, seed.DisplayNameThai)
+					),
+					Theme.Colors.Yellow,
+					"GardenHarvest",
+					{ slot = index }
+				)
+			else
+				local seed = Catalog.Seeds[slot.Seed]
+				local seconds = math.ceil(slot.SecondsLeft or 0)
+				addButton(
+					bilingual(
+						string.format("Patch %d: %s grows for %ds", index, seed.DisplayName, seconds),
+						string.format("แปลง %d: %sโตอีก %d วินาที", index, seed.DisplayNameThai, seconds)
+					),
+					Theme.Colors.Purple,
+					"GardenHarvest",
+					{ slot = index }
+				)
+			end
+		end
+		addHeading(bilingual("Seed basket", "ตะกร้าเมล็ดพันธุ์"))
+		local prices = { Daisy = 15, Tulip = 25, Lavender = 40 }
+		for _, seedId in ipairs(Catalog.SeedOrder) do
+			local seed = Catalog.Seeds[seedId]
+			local seedCount = state.Garden.Seeds[seedId] or 0
+			addButton(
+				bilingual(
+					string.format("Buy %s seed - %d coins (have %d)", seed.DisplayName, prices[seedId], seedCount),
+					string.format("ซื้อเมล็ด%s - %d เหรียญ (มี %d)", seed.DisplayNameThai, prices[seedId], seedCount)
+				),
+				seed.Color,
+				"BuySeed",
+				{ seed = seedId }
+			)
+		end
+	elseif menu == "Pet" then
+		addHeading(bilingual(
+			string.format("%s the %s - Level %d", state.Pet.Name, state.Pet.Species, state.Pet.Level),
+			string.format("%s แมวของคุณ - เลเวล %d", state.Pet.Name, state.Pet.Level)
+		))
+		addText(bilingual(
+			string.format("Hunger: %d/100  Clean: %d/100  XP: %d/%d", state.Pet.Hunger, state.Pet.Cleanliness, state.Pet.XP, state.Pet.Level * 25),
+			string.format("ความหิว: %d/100  ความสะอาด: %d/100  XP: %d/%d", state.Pet.Hunger, state.Pet.Cleanliness, state.Pet.XP, state.Pet.Level * 25)
+		), 64)
+		addButton(bilingual("Give a snack - 5 coins", "ให้ขนม - 5 เหรียญ"), Theme.Colors.Pink, "PetFeed", {})
+		addButton(bilingual("Play together", "เล่นด้วยกัน"), Theme.Colors.Purple, "PetPlay", {})
+		addButton(bilingual("Bubble bath", "อาบน้ำฟองสบู่"), Theme.Colors.Blue, "PetBath", {})
+		addButton(bilingual("Visit the Pet Shop", "ไปร้านสัตว์เลี้ยง"), Theme.Colors.Blue, "Teleport", { destination = "PetShop" })
+	elseif menu == "Cafe" then
+		if not state.Cafe.Unlocked then
+			addHeading(bilingual("Open your family cafe", "เปิดคาเฟ่ครอบครัวของคุณ"))
+			addText(bilingual("Serve friendly town guests and earn coins.", "เสิร์ฟลูกค้าในเมืองและรับเหรียญ"))
+			addButton(
+				bilingual(
+					string.format("Open cafe - %d coins", Config.CafeUnlockCost),
+					string.format("เปิดคาเฟ่ - %d เหรียญ", Config.CafeUnlockCost)
+				),
+				Theme.Colors.Pink,
+				"CafeUnlock",
+				{}
+			)
+		else
+			addHeading(bilingual(string.format("Family Cafe - Level %d", state.Cafe.Level), string.format("คาเฟ่ครอบครัว - เลเวล %d", state.Cafe.Level)))
+			addText(bilingual(
+				string.format("Served %d happy guests. Helpers: %d/3", state.Cafe.Served, state.Cafe.Staff or 0),
+				string.format("เสิร์ฟลูกค้าแล้ว %d คน ผู้ช่วย: %d/3", state.Cafe.Served, state.Cafe.Staff or 0)
+			))
+			addButton(bilingual("Make a cupcake and serve", "ทำคัพเค้กและเสิร์ฟ"), Theme.Colors.Pink, "CafeServe", {})
+			local upgradeCost = state.Cafe.Level * 180
+			addButton(
+				bilingual(
+					string.format("Upgrade cafe - %d coins", upgradeCost),
+					string.format("อัปเกรดคาเฟ่ - %d เหรียญ", upgradeCost)
+				),
+				Theme.Colors.Mint,
+				"CafeUpgrade",
+				{}
+			)
+			if (state.Cafe.Staff or 0) < 3 then
+				local helperCost = 250 + (state.Cafe.Staff or 0) * 200
+				addButton(
+					bilingual(
+						string.format("Hire NPC helper - %d coins", helperCost),
+						string.format("จ้างผู้ช่วย NPC - %d เหรียญ", helperCost)
+					),
+					Theme.Colors.Purple,
+					"HireCafeStaff",
+					{}
+				)
+			end
+		end
+		addButton(bilingual("Go to the Cafe", "ไปคาเฟ่"), Theme.Colors.Yellow, "Teleport", { destination = "Cafe" })
+	elseif menu == "Style" then
+		addHeading(bilingual("Choose a happy outfit", "เลือกชุดน่ารัก"))
+		local equipped = Catalog.Outfits[state.Wardrobe.Equipped] or Catalog.Outfits.Sunshine
+		addText(bilingual(string.format("Wearing: %s", equipped.DisplayName), string.format("กำลังใส่: %s", equipped.DisplayNameThai)))
+		for _, outfitId in ipairs(Catalog.OutfitOrder) do
+			local outfit = Catalog.Outfits[outfitId]
+			addButton(
+				bilingual(string.format("Wear %s", outfit.DisplayName), string.format("ใส่ชุด%s", outfit.DisplayNameThai)),
+				outfit.Torso,
+				"EquipOutfit",
+				{ outfit = outfitId }
+			)
+		end
+	elseif menu == "Map" then
+		addHeading(bilingual("Where shall we go?", "อยากไปที่ไหน?"))
+		addText(bilingual("Tap a place to travel there safely.", "แตะสถานที่เพื่อเดินทางอย่างปลอดภัย"))
+		addButton(bilingual("My Home", "บ้านของฉัน"), Theme.Colors.Pink, "Teleport", { destination = "Home" })
+		for _, destination in ipairs({ "Town", "Cafe", "PetShop", "FlowerShop", "Playground", "School", "Park", "Lake", "Beach", "Forest" }) do
+			local english = destination:gsub("(%l)(%u)", "%1 %2")
+			addButton(bilingual(english, DESTINATION_THAI[destination]), Theme.Colors.Blue, "Teleport", { destination = destination })
+		end
+	end
+end
+
+for index, name in ipairs({ "Home", "Garden", "Pet", "Cafe", "Style", "Map" }) do
+	local button = Instance.new("TextButton")
+	button.Name = name
+	button.AutoButtonColor = false
+	button.BackgroundColor3 = Theme.Colors.White
+	button.Size = UDim2.new(1 / 6, -9, 1, 0)
+	button.Font = Enum.Font.GothamBold
+	button.LayoutOrder = index
+	button.Text = bilingual(string.upper(name), NAV_THAI[name])
+	button.TextColor3 = Theme.Colors.Ink
+	button.TextSize = 9
+	button.TextWrapped = true
+	button.Parent = nav
+	Components.corner(button, Theme.SmallCorner)
+	button.Activated:Connect(function()
+		renderMenu(name)
+	end)
+	navButtons[name] = button
+end
+
+closeButton.Activated:Connect(function()
+	panel.Visible = false
+end)
+
+giftButton.Activated:Connect(function()
+	if state and state.Daily and state.Daily.CanClaim then
+		invoke("ClaimDaily", {})
+	else
+		showToast("Come back tomorrow for another gift!")
+	end
+end)
+
+startButton.Activated:Connect(function()
+	onboarding.Visible = false
+	invoke("FinishOnboarding", {})
+	renderMenu("Home")
+end)
+
+stateChanged.OnClientEvent:Connect(applyState)
+toastRemote.OnClientEvent:Connect(showToast)
+
+invoke("GetState", {}, true)
+
+task.spawn(function()
+	while gui.Parent do
+		task.wait(5)
+		invoke("GetState", {}, true)
+	end
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="Folder" referent="17">
+        <Properties>
+          <string name="Name">UI</string>
+        </Properties>
+        <Item class="ModuleScript" referent="18">
+          <Properties>
+            <string name="Name">Components</string>
+            <string name="Source"><![CDATA[local TweenService = game:GetService("TweenService")
+
+local Theme = require(script.Parent:WaitForChild("Theme"))
+local Components = {}
+
+function Components.corner(parent, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = radius or Theme.Corner
+	corner.Parent = parent
+	return corner
+end
+
+function Components.stroke(parent, color, thickness, transparency)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color or Theme.Colors.White
+	stroke.Thickness = thickness or 2
+	stroke.Transparency = transparency or 0
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = parent
+	return stroke
+end
+
+function Components.shadow(parent)
+	local shadow = Instance.new("ImageLabel")
+	shadow.Name = "Shadow"
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.BackgroundTransparency = 1
+	shadow.Image = "rbxassetid://1316045217"
+	shadow.ImageColor3 = Theme.Colors.Shadow
+	shadow.ImageTransparency = 0.75
+	shadow.Position = UDim2.fromScale(0.5, 0.54)
+	shadow.ScaleType = Enum.ScaleType.Slice
+	shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+	shadow.Size = UDim2.new(1, 24, 1, 24)
+	shadow.ZIndex = math.max(0, parent.ZIndex - 1)
+	shadow.Parent = parent
+	return shadow
+end
+
+function Components.label(parent, text, size, position, textSize, bold)
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Size = size
+	label.Position = position or UDim2.fromOffset(0, 0)
+	label.Font = bold and Enum.Font.GothamBold or Enum.Font.GothamMedium
+	label.Text = text
+	label.TextColor3 = Theme.Colors.Ink
+	label.TextSize = textSize or 18
+	label.TextWrapped = true
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = parent
+	return label
+end
+
+function Components.button(parent, text, color, callback)
+	local button = Instance.new("TextButton")
+	button.AutoButtonColor = false
+	button.BackgroundColor3 = color or Theme.Colors.Pink
+	button.Size = UDim2.new(1, 0, 0, Theme.TouchHeight)
+	button.Font = Enum.Font.GothamBold
+	button.Text = text
+	button.TextColor3 = Theme.Colors.White
+	button.TextSize = 12
+	button.TextWrapped = true
+	button.Parent = parent
+	Components.corner(button, Theme.SmallCorner)
+	Components.stroke(button, Theme.Colors.White, 2, 0.45)
+
+	button.MouseEnter:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.12), { BackgroundColor3 = button.BackgroundColor3:Lerp(Theme.Colors.White, 0.12) }):Play()
+	end)
+	button.MouseLeave:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.12), { BackgroundColor3 = color or Theme.Colors.Pink }):Play()
+	end)
+	button.Activated:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.08), { Size = UDim2.new(1, -6, 0, Theme.TouchHeight - 3) }):Play()
+		task.delay(0.09, function()
+			if button.Parent then
+				TweenService:Create(button, TweenInfo.new(0.1), { Size = UDim2.new(1, 0, 0, Theme.TouchHeight) }):Play()
+			end
+		end)
+		callback()
+	end)
+	return button
+end
+
+function Components.list(parent, padding)
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, padding or 10)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.Parent = parent
+	return layout
+end
+
+return table.freeze(Components)
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="19">
+          <Properties>
+            <string name="Name">Theme</string>
+            <string name="Source"><![CDATA[return table.freeze({
+	Colors = {
+		Cream = Color3.fromRGB(242, 244, 245),
+		White = Color3.fromRGB(255, 255, 255),
+		Ink = Color3.fromRGB(57, 59, 61),
+		Muted = Color3.fromRGB(96, 97, 98),
+		Pink = Color3.fromRGB(0, 162, 255),
+		PinkDark = Color3.fromRGB(0, 116, 189),
+		Mint = Color3.fromRGB(2, 183, 87),
+		Blue = Color3.fromRGB(0, 162, 255),
+		Purple = Color3.fromRGB(57, 59, 61),
+		Yellow = Color3.fromRGB(245, 166, 35),
+		Red = Color3.fromRGB(226, 35, 26),
+		Shadow = Color3.fromRGB(25, 27, 29),
+	},
+	Corner = UDim.new(0, 18),
+	SmallCorner = UDim.new(0, 12),
+	TouchHeight = 62,
+})
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+</roblox>

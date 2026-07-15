@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wildwood Assets - Character Reference Sheet</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&amp;family=Quicksand:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+        .wood-texture {
+            background-image: url("https://www.transparenttextures.com/patterns/wood-pattern.png");
+            background-blend-mode: multiply;
+        }
+        .paper-texture {
+            background-image: url("https://www.transparenttextures.com/patterns/parchment.png");
+            background-blend-mode: soft-light;
+        }
+        .inner-glow-gold {
+            box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+        .pressed-effect {
+            border-bottom: 4px solid #4A3F29;
+        }
+        .pressed-effect:active {
+            transform: translateY(2px);
+            border-bottom-width: 0;
+        }
+        body {
+            background-color: #fff8f0;
+            overflow-x: hidden;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#fff8f0",
+                        "outline-variant": "#c3c8bd",
+                        "on-tertiary-fixed-variant": "#753400",
+                        "secondary-container": "#f0deb3",
+                        "surface-container-low": "#fff3d8",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#321200",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#f3e1b3",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#ebd9ab",
+                        "secondary-fixed": "#f3e1b6",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#434840",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#231b00",
+                        "tertiary": "#7d3802",
+                        "tertiary-fixed": "#ffdbc9",
+                        "tertiary-fixed-dim": "#ffb68c",
+                        "on-primary-container": "#caeabb",
+                        "on-secondary-fixed": "#231a02",
+                        "on-tertiary-container": "#ffdac6",
+                        "primary-fixed-dim": "#b0d0a2",
+                        "surface": "#fff8f0",
+                        "tertiary-container": "#9b4f1b",
+                        "on-secondary-container": "#6f613f",
+                        "on-primary-fixed": "#082104",
+                        "on-surface": "#231b00",
+                        "primary-container": "#4f6b45",
+                        "on-primary-fixed-variant": "#334d2a",
+                        "outline": "#74796f",
+                        "surface-container": "#ffedbe",
+                        "surface-variant": "#f3e1b3",
+                        "secondary": "#6a5d3b",
+                        "inverse-primary": "#b0d0a2",
+                        "surface-tint": "#4a6640",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#d6c59c",
+                        "inverse-on-surface": "#fff0cb",
+                        "background": "#fff8f0",
+                        "primary": "#38532f",
+                        "inverse-surface": "#3a2f0f",
+                        "primary-fixed": "#cbecbc",
+                        "on-secondary-fixed-variant": "#514626",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#f9e7b8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "unit": "8px",
+                        "margin-tablet": "32px",
+                        "margin-desktop": "48px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Quicksand"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Quicksand"],
+                        "label-sm": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "label-lg": ["14px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.5", "fontWeight": "600"}],
+                        "headline-sm": ["22px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "headline-md": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center w-full px-margin-desktop h-24 bg-surface-container-high dark:bg-surface-container-high shadow-md transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="park">park</span>
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary dark:text-primary-fixed tracking-tight">Wildwood Assets</h1>
+</div>
+<nav class="hidden md:flex gap-8">
+<a class="text-primary dark:text-primary-fixed font-bold border-b-4 border-primary dark:border-primary-fixed pb-1" href="#">Characters</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant opacity-80 hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-colors px-3 py-1 rounded-lg" href="#">Animals</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant opacity-80 hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-colors px-3 py-1 rounded-lg" href="#">Architecture</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant opacity-80 hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-colors px-3 py-1 rounded-lg" href="#">Environment</a>
+</nav>
+<div class="flex gap-4">
+<button class="material-symbols-outlined p-2 rounded-full hover:bg-surface-container-highest transition-colors" data-icon="search">search</button>
+<button class="material-symbols-outlined p-2 rounded-full hover:bg-surface-container-highest transition-colors" data-icon="shopping_bag">shopping_bag</button>
+</div>
+</header>
+<!-- NavigationDrawer (Sidebar) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col pt-24 z-40 bg-surface-container-low dark:bg-surface-container-low border-r-2 border-outline-variant shadow-lg h-screen w-80 rounded-r-xl hidden lg:flex">
+<div class="px-8 py-6">
+<h2 class="text-headline-sm font-headline-sm text-tertiary dark:text-tertiary-fixed">Asset Categories</h2>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container rounded-full mx-4 py-3 px-6 font-bold shadow-sm flex items-center gap-4 transition-all duration-300 translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-label-lg font-label-lg">Characters</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant py-3 px-10 hover:bg-surface-variant dark:hover:bg-surface-variant flex items-center gap-4 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="pets">pets</span>
+<span class="text-label-lg font-label-lg">Animals</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant py-3 px-10 hover:bg-surface-variant dark:hover:bg-surface-variant flex items-center gap-4 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-label-lg font-label-lg">Architecture</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant py-3 px-10 hover:bg-surface-variant dark:hover:bg-surface-variant flex items-center gap-4 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="forest">forest</span>
+<span class="text-label-lg font-label-lg">Environment</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="lg:pl-80 pt-24 pb-24 md:pb-8 px-margin-mobile md:px-margin-desktop min-h-screen">
+<div class="max-w-7xl mx-auto py-10">
+<!-- Header Section -->
+<div class="mb-12">
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-[#6FA0B1] text-white px-3 py-1 rounded-full text-label-sm font-label-sm">ROBLOX REFERENCE</span>
+<span class="text-on-surface-variant opacity-60">•</span>
+<span class="text-on-surface-variant text-label-sm font-label-sm">VERSION 1.4.0</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-primary mb-4">Character Reference Sheet</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                    Detailed orthographic views for the 'Explorer' series. Use these front and side silhouettes for accurate 3D modeling and texturing within the Wildwood ecosystem.
+                </p>
+</div>
+<!-- Reference Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+<!-- Character 1: Lead Explorer -->
+<section class="bg-surface-dim rounded-xl p-8 border-2 border-outline-variant paper-texture shadow-lg">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Lead Explorer</h3>
+<p class="text-label-lg text-[#6FA0B1]">SKU: WW-CH-01</p>
+</div>
+<div class="flex gap-2">
+<span class="bg-primary text-white p-2 rounded-lg material-symbols-outlined cursor-pointer hover:bg-primary-container" data-icon="visibility">visibility</span>
+<span class="bg-primary text-white p-2 rounded-lg material-symbols-outlined cursor-pointer hover:bg-primary-container" data-icon="download">download</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 bg-white/40 p-4 rounded-xl border border-dashed border-outline">
+<div class="space-y-4">
+<div class="aspect-[3/4] bg-surface-bright rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" data-alt="A front view orthographic drawing of a chibi-style Roblox lead explorer character. The character wears a dark green scout vest over a beige shirt, a matching brimmed hat, and a detailed brown leather backpack. The style is low-poly smooth with hand-painted textures, set against a warm cream background with soft ambient shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdMy-dGOfSx8tvDXu8uVA9Myv_XOt9XCtPl-ISz342dnT8phaP7rNUe1-q7C6skg7pn3jA0arf35VgLhteidZvcUhfV9kTMT86r-fFjjw9bOP5S6g1a4vtrgPpE7wl2mvjkV2CJoCC1DbY7CXeUncwI-tf9VPUTCzRdjCgyFpMJGEHIPtx0JG6hW6Tjaf64dyHZ2djcjJUSZlC7lGMxAJi-2xRi91vZ-oXFgGt--uQ8jxRTgQ1jQSgR6VpvWYi-aWm_-cRx5P8LMxt"/>
+<div class="absolute bottom-2 left-2 bg-[#6FA0B1] text-white text-[10px] px-2 py-0.5 rounded font-bold">FRONT</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="aspect-[3/4] bg-surface-bright rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" data-alt="A side profile orthographic view of the chibi lead explorer character. It shows the thickness of the brown leather backpack with bedroll, the tilt of the wide-brimmed scout hat, and the layered vest. The aesthetic is tactile and whimsical, consistent with a woodland workshop theme featuring soft lighting and saturated earthy greens and browns." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVAJejX_Xd9G8LUk95LOLhIy7vwUidhdBV4jnBnxWo8kvvmUQ_ag4Afy3JHcFciVdgMwEBd7AyZAcrzzZj7aELClaa5R2sLCRZbZuaWYhbZ_KkX2PqlMSr5O0fHa7AtrZ_hlrscRnuJi4mSdxEuge1RIwABfwx4uAs_RqwgpTROywBoFyY7u9qBQYA7iWXrK8_L4tTCMWrEQQCMVr-6k-ZDpG16qR-YrJOqEycQl6INs8nhKFJrhLJMdM_BwdugVS-bp2YWWQOrLnm"/>
+<div class="absolute bottom-2 left-2 bg-[#6FA0B1] text-white text-[10px] px-2 py-0.5 rounded font-bold">SIDE</div>
+</div>
+</div>
+</div>
+<div class="mt-4 flex flex-wrap gap-2">
+<span class="text-label-sm font-label-sm px-3 py-1 bg-surface-container rounded-full text-secondary">A-Pose</span>
+<span class="text-label-sm font-label-sm px-3 py-1 bg-surface-container rounded-full text-secondary">High-Poly Mesh</span>
+<span class="text-label-sm font-label-sm px-3 py-1 bg-surface-container rounded-full text-secondary">Atlas: v2</span>
+</div>
+</section>
+<!-- Character 2: Nature Guide -->
+<section class="bg-surface-dim rounded-xl p-8 border-2 border-outline-variant paper-texture shadow-lg">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Nature Guide</h3>
+<p class="text-label-lg text-[#6FA0B1]">SKU: WW-CH-02</p>
+</div>
+<div class="flex gap-2">
+<span class="bg-primary text-white p-2 rounded-lg material-symbols-outlined cursor-pointer hover:bg-primary-container" data-icon="visibility">visibility</span>
+<span class="bg-primary text-white p-2 rounded-lg material-symbols-outlined cursor-pointer hover:bg-primary-container" data-icon="download">download</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 bg-white/40 p-4 rounded-xl border border-dashed border-outline">
+<div class="space-y-4">
+<div class="aspect-[3/4] bg-surface-bright rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" data-alt="A front view orthographic of a whimsical chibi nature guide character. The character features soft, rounded features and a bright orange neckerchief over a light tan explorer shirt. They wear a small binoculars accessory and a felt scout cap. The color palette uses warm creams, earth browns, and muted slate blue accents in a cozy forest style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIzGdhcB9nIhNFMCxnaJu3jgPudagiUfh91SCDtXYNhwFWwtmHvM569QkjLOGYjBxQHvhdaNtNHTU6v8UaArsVe-V8PNlJbe9IF1F00aX8o2FhTJw_TVddv4t-n9-P6Ux5YpfMBQuwJIdIYkJR_2ay1_0gIVx4WKrxBKlkF_3ZwUV82ykNTjD7MpU2q2M5w3t7eOd8Sbmq2dgjpna8dgptXUyMgmhDDHAFzAJ0WLmP2hXfAatcziWunMh4TKqdMYLJswe9Ln-MiYqf"/>
+<div class="absolute bottom-2 left-2 bg-[#6FA0B1] text-white text-[10px] px-2 py-0.5 rounded font-bold">FRONT</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="aspect-[3/4] bg-surface-bright rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" data-alt="A side profile orthographic of the nature guide character showing a small green backpack and the silhouette of the explorer cap. The lighting is soft and ambient, mimicking a forest canopy. The character has chunky, stylized limbs designed for Roblox animation. The visual style is hand-painted and tactile with deep earth brown shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuvEEt01-gBHhibt0-nmhDnqRcp5iBoj3aYBP7FPZgmE_5XjIii7oqQCajzFAhhHKMdjNQI8wgm0Zc5NKQUDRBT4S8tS6QgKkweccH_z-tH5B-JFa1HIm413mcNFICtqqFS__CdtcaRlTmrUijqqbylZRTHF5mWMmrN20KdkJPE7uN2HuJ3fBzL347GPkWP6yJJkn6pm-TTidp-VDx9-jEuE3vpDpOvD8hrFBoXSiMnjRoeyolStjDyIdQj9dn6upWuOUimQAqlikb"/>
+<div class="absolute bottom-2 left-2 bg-[#6FA0B1] text-white text-[10px] px-2 py-0.5 rounded font-bold">SIDE</div>
+</div>
+</div>
+</div>
+<div class="mt-4 flex flex-wrap gap-2">
+<span class="text-label-sm font-label-sm px-3 py-1 bg-surface-container rounded-full text-secondary">A-Pose</span>
+<span class="text-label-sm font-label-sm px-3 py-1 bg-surface-container rounded-full text-secondary">Dynamic Accessory</span>
+</div>
+</section>
+<!-- Character 3: Wildwood Scout -->
+<section class="bg-surface-dim rounded-xl p-8 border-2 border-outline-variant paper-texture shadow-lg">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Wildwood Scout</h3>
+<p class="text-label-lg text-[#6FA0B1]">SKU: WW-CH-03</p>
+</div>
+<div class="flex gap-2">
+<span class="bg-primary text-white p-2 rounded-lg material-symbols-outlined cursor-pointer hover:bg-primary-container" data-icon="visibility">visibility</span>
+<span class="bg-primary text-white p-2 rounded-lg material-symbols-outlined cursor-pointer hover:bg-primary-container" data-icon="download">download</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 bg-white/40 p-4 rounded-xl border border-dashed border-outline">
+<div class="space-y-4">
+<div class="aspect-[3/4] bg-surface-bright rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" data-alt="Front orthographic of a young chibi Wildwood scout character wearing a dark blue vest and an oversized explorer hat with a feather. The design is simple and friendly, featuring large eyes and a warm expression. The background is a clean cream grid with slate blue accents, maintaining a whimsical adventure mood with soft golden yellow highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhURPV4zWSW_AplU-eMQUs0LDaS1qhnwlnmseDuC1o8eC6E29md6crfFKWgqcTchUOoHdTeA2CpAWnmkJYS9mtXO3jb9jxtj6Rprt8yUe_beBhgut3Uhb1hVu3T3o_dcbvtKPuRY6Y_JpSb2sPrsrFw1cu2O4lYQq7pLFgmTRX1puAMx_De1MjFHIeAUXZpgGTdf8Ax7VJPH106x0nlkghHOJ2HIIxkohHC3-Lu3m9P-eDG2GICN6n2GP2cCp4tfstupkY9ixxutCI"/>
+<div class="absolute bottom-2 left-2 bg-[#6FA0B1] text-white text-[10px] px-2 py-0.5 rounded font-bold">FRONT</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="aspect-[3/4] bg-surface-bright rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" data-alt="Side profile orthographic of the Wildwood scout character showing the feather in the hat and a canvas satchel bag. The character silhouette is smooth and rounded for low-poly efficiency. Hand-painted textures suggest soft fabric and carved wood. The scene is illuminated by warm, magical forest lighting with soft, deep brown shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoLgKzOdwJ-iRkJGyvtknf48tX2txrulfmKTSi84_zm8IGeBwbXJ-9Tv2cncZyUPXwMsd_HaHSAUajfChDKqFI2IAL8CftGxo4Url73PPrkLgia-F56Nyd7J-mmo2J_YUbHoudmZ8Nhl4HJ4USAPbpf8u_ilMZOfwoBjIB48eE6MrAu7iCYLsNQdNkgZZfdYeAaE5ncpWM5b_hGcu8CjJtun6i6Z8BzAerNMK1Z4yIPyW73QwrVHvQHKyL0EAviauIF6sjT9ULkOxV"/>
+<div class="absolute bottom-2 left-2 bg-[#6FA0B1] text-white text-[10px] px-2 py-0.5 rounded font-bold">SIDE</div>
+</div>
+</div>
+</div>
+<div class="mt-4 flex flex-wrap gap-2">
+<span class="text-label-sm font-label-sm px-3 py-1 bg-surface-container rounded-full text-secondary">A-Pose</span>
+<span class="text-label-sm font-label-sm px-3 py-1 bg-surface-container rounded-full text-secondary">Multi-Color Swatch</span>
+</div>
+</section>
+<!-- Character 4: Forest Ranger -->
+<section class="bg-surface-dim rounded-xl p-8 border-2 border-outline-variant paper-texture shadow-lg">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">Forest Ranger</h3>
+<p class="text-label-lg text-[#6FA0B1]">SKU: WW-CH-04</p>
+</div>
+<div class="flex gap-2">
+<span class="bg-primary text-white p-2 rounded-lg material-symbols-outlined cursor-pointer hover:bg-primary-container" data-icon="visibility">visibility</span>
+<span class="bg-primary text-white p-2 rounded-lg material-symbols-outlined cursor-pointer hover:bg-primary-container" data-icon="download">download</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 bg-white/40 p-4 rounded-xl border border-dashed border-outline">
+<div class="space-y-4">
+<div class="aspect-[3/4] bg-surface-bright rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" data-alt="Front orthographic view of a senior chibi forest ranger character. The character wears a formal olive green uniform with gold buttons and a badges. The wide ranger hat sits firmly on the head. The aesthetic is tactile and grounded in a woodland workshop style with a saturated palette of forest green, dark earth brown, and warm cream." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDocVMly6U0blenoLzRa7yZ4Ek-jgfyvJGODa7dAin92OnPb0tsreMy28_mH3N3sLHxAwQijdcYGeUeFkuE93qcf4Gw5yXY7en1VLLUwunkmw0ORGOJlRljV7qR6gIGaFP3PzkLurAQyunEDnWJtP8zkK9ceahgU_8_WsXvWpQlgVuv5-15EaDqfgOgErnQDVpU8EkCMKaW1OvrxYtaDLrqNzuCCcvmRgcIgwskGWskUgZeBBi5XA7ux6ymZHB6SCtky0PA6Y54pGUK"/>
+<div class="absolute bottom-2 left-2 bg-[#6FA0B1] text-white text-[10px] px-2 py-0.5 rounded font-bold">FRONT</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="aspect-[3/4] bg-surface-bright rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" data-alt="Side profile orthographic of the forest ranger character showing the uniform detail and a utility belt with small pouches. The lighting creates a sense of safety and warmth, highlighting the soft curves and low-poly smoothness of the character model. The background uses a subtle paper texture over a warm cream surface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7Z4hCLPJjkbh_wjVlHlLepXEdTvraXmSnxg4uaJFBFVyrDjYlAJOso7xHCP2LxT8aWFYVBGAlQdxtZ_p9OlJthyuvdtHWPaWURH2jTBqPqDFsm_6qnELsS6IeoFQlY9HqVfFbaZJ6eFsiY1KlyoKe20hzYoaeYM9Skvl9pAiJhkHewwAvCgPpY1XPk0RheVi7zTMf5YUR1UFlVp8Ocu1vkCZ_u7fN1VA5RwIqs2nB1pQwSvRYRsKH4U9jpkLwRz1H6DMTQf-RhXIE"/>
+<div class="absolute bottom-2 left-2 bg-[#6FA0B1] text-white text-[10px] px-2 py-0.5 rounded font-bold">SIDE</div>
+</div>
+</div>
+</div>
+<div class="mt-4 flex flex-wrap gap-2">
+<span class="text-label-sm font-label-sm px-3 py-1 bg-surface-container rounded-full text-secondary">A-Pose</span>
+<span class="text-label-sm font-label-sm px-3 py-1 bg-surface-container rounded-full text-secondary">Rig-Ready</span>
+</div>
+</section>
+</div>
+<!-- Technical Specs Footer -->
+<div class="mt-16 bg-primary p-8 rounded-2xl text-on-primary wood-texture shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
+<div>
+<h4 class="font-headline-sm text-headline-sm mb-2">Technical Standards</h4>
+<p class="font-body-md text-on-primary-container opacity-90 max-w-xl">All character models must adhere to the 2500 polycount limit for performance optimization. Textures should be 1024x1024 PBR workflow compatible.</p>
+</div>
+<button class="bg-[#f3e1b3] text-primary px-8 py-4 rounded-xl font-headline-sm pressed-effect flex items-center gap-2 hover:bg-white transition-all">
+<span class="material-symbols-outlined" data-icon="file_download">file_download</span>
+                    Get All Character Assets
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 h-20 bg-surface-container dark:bg-surface-container shadow-[0_-8px_20px_rgba(74,63,41,0.1)] rounded-t-xl">
+<div class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-2xl px-6 py-2 shadow-inner scale-110 duration-200 ease-out">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="text-label-sm font-label-sm">Catalog</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-2 opacity-70 hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" data-icon="star">star</span>
+<span class="text-label-sm font-label-sm">Favorites</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-2 opacity-70 hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+<span class="text-label-sm font-label-sm">Download</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-2 opacity-70 hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-sm font-label-sm">Settings</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for hover effects on cards
+        document.querySelectorAll('section').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.boxShadow = '0 10px 30px rgba(74, 63, 41, 0.2), inset 0 0 10px rgba(255, 215, 0, 0.1)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.boxShadow = '';
+            });
+        });
+    </script>
+</body></html>

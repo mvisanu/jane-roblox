@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wildwood Assets - Environmental Assets</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Quicksand:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-bright": "#fff8f0",
+                    "outline-variant": "#c3c8bd",
+                    "on-tertiary-fixed-variant": "#753400",
+                    "secondary-container": "#f0deb3",
+                    "surface-container-low": "#fff3d8",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-fixed": "#321200",
+                    "error-container": "#ffdad6",
+                    "surface-container-highest": "#f3e1b3",
+                    "on-tertiary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "surface-dim": "#ebd9ab",
+                    "secondary-fixed": "#f3e1b6",
+                    "on-error": "#ffffff",
+                    "on-surface-variant": "#434840",
+                    "on-secondary": "#ffffff",
+                    "on-background": "#231b00",
+                    "tertiary": "#7d3802",
+                    "tertiary-fixed": "#ffdbc9",
+                    "tertiary-fixed-dim": "#ffb68c",
+                    "on-primary-container": "#caeabb",
+                    "on-secondary-fixed": "#231a02",
+                    "on-tertiary-container": "#ffdac6",
+                    "primary-fixed-dim": "#b0d0a2",
+                    "surface": "#fff8f0",
+                    "tertiary-container": "#9b4f1b",
+                    "on-secondary-container": "#6f613f",
+                    "on-primary-fixed": "#082104",
+                    "on-surface": "#231b00",
+                    "primary-container": "#4f6b45",
+                    "on-primary-fixed-variant": "#334d2a",
+                    "outline": "#74796f",
+                    "surface-container": "#ffedbe",
+                    "surface-variant": "#f3e1b3",
+                    "secondary": "#6a5d3b",
+                    "inverse-primary": "#b0d0a2",
+                    "surface-tint": "#4a6640",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed-dim": "#d6c59c",
+                    "inverse-on-surface": "#fff0cb",
+                    "background": "#fff8f0",
+                    "primary": "#38532f",
+                    "inverse-surface": "#3a2f0f",
+                    "primary-fixed": "#cbecbc",
+                    "on-secondary-fixed-variant": "#514626",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-high": "#f9e7b8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "unit": "8px",
+                    "margin-tablet": "32px",
+                    "margin-desktop": "48px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Quicksand"],
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Quicksand"],
+                    "label-sm": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "label-lg": ["14px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.5", "fontWeight": "600"}],
+                    "headline-sm": ["22px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "headline-md": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "500"}],
+                    "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #fff8f0;
+            color: #231b00;
+            font-family: 'Quicksand', sans-serif;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .asset-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(74, 63, 41, 0.1), 0 2px 4px -1px rgba(74, 63, 41, 0.06);
+        }
+        .asset-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(74, 63, 41, 0.15), 0 10px 10px -5px rgba(74, 63, 41, 0.04);
+            border-color: #f6d77a;
+        }
+        .wood-texture {
+            background-image: radial-gradient(#6a5d3b 0.5px, transparent 0.5px);
+            background-size: 10px 10px;
+        }
+        .golden-glow {
+            filter: drop-shadow(0 0 8px rgba(246, 215, 122, 0.6));
+        }
+        /* Custom scrollbar for woodland vibe */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fff3d8;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6a5d3b;
+            border-radius: 10px;
+            border: 3px solid #fff3d8;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background">
+<!-- TopAppBar -->
+<header class="bg-surface-container-high dark:bg-surface-container-high shadow-md flex justify-between items-center w-full px-margin-desktop h-24 fixed top-0 left-0 z-50">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="park">park</span>
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary tracking-tight">Wildwood Assets</h1>
+</div>
+<nav class="hidden md:flex items-center gap-8 h-full">
+<a class="text-on-surface-variant opacity-80 font-label-lg text-label-lg hover:bg-surface-container-highest transition-colors px-4 py-2 rounded-lg" href="#">Characters</a>
+<a class="text-on-surface-variant opacity-80 font-label-lg text-label-lg hover:bg-surface-container-highest transition-colors px-4 py-2 rounded-lg" href="#">Animals</a>
+<a class="text-on-surface-variant opacity-80 font-label-lg text-label-lg hover:bg-surface-container-highest transition-colors px-4 py-2 rounded-lg" href="#">Architecture</a>
+<a class="text-primary font-bold border-b-4 border-primary font-label-lg text-label-lg h-full flex items-center" href="#">Environment</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="bg-primary text-on-primary px-6 py-3 rounded-xl font-label-lg text-label-lg shadow-md active:scale-95 duration-150 flex items-center gap-2 border-b-4 border-[#4A3F29]">
+<span class="material-symbols-outlined text-lg" data-icon="upload">upload</span>
+                Upload Asset
+            </button>
+</div>
+</header>
+<!-- NavigationDrawer (Desktop Only) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col pt-32 z-40 bg-surface-container-low border-r-2 border-outline-variant w-80 shadow-lg hidden lg:flex">
+<div class="px-8 mb-8">
+<h2 class="text-headline-sm font-headline-sm text-tertiary">Asset Categories</h2>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="text-on-surface-variant py-3 px-10 hover:bg-surface-variant transition-all duration-300 flex items-center gap-4" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-lg text-label-lg">Characters</span>
+</a>
+<a class="text-on-surface-variant py-3 px-10 hover:bg-surface-variant transition-all duration-300 flex items-center gap-4" href="#">
+<span class="material-symbols-outlined" data-icon="pets">pets</span>
+<span class="font-label-lg text-label-lg">Animals</span>
+</a>
+<a class="text-on-surface-variant py-3 px-10 hover:bg-surface-variant transition-all duration-300 flex items-center gap-4" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-lg text-label-lg">Architecture</span>
+</a>
+<a class="bg-secondary-container text-on-secondary-container rounded-full mx-4 py-3 px-6 font-bold shadow-sm flex items-center gap-4 translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="forest">forest</span>
+<span class="font-label-lg text-label-lg">Environment</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content -->
+<main class="pt-32 pb-24 lg:pl-80 px-margin-mobile md:px-margin-tablet lg:px-margin-desktop min-h-screen">
+<section class="max-w-7xl mx-auto">
+<!-- Hero Title -->
+<div class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h2 class="text-headline-lg font-headline-lg text-primary mb-2">Environmental Assets</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant max-w-2xl">
+                        A curated collection of stylized environment pieces and props for the Wildwood ecosystem. Optimized for Roblox avatar proportions and low-poly performance.
+                    </p>
+</div>
+<div class="flex gap-4">
+<div class="bg-secondary-container px-4 py-2 rounded-full flex items-center gap-2 border-2 border-outline-variant">
+<span class="material-symbols-outlined text-tertiary" data-icon="deployed_code">deployed_code</span>
+<span class="text-label-lg font-label-lg text-on-secondary-container">24 Assets</span>
+</div>
+</div>
+</div>
+<!-- Bento Grid of Assets -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Stylized Pine Trees (Large Feature) -->
+<div class="asset-card md:col-span-2 bg-white rounded-xl overflow-hidden border-2 border-transparent relative">
+<div class="h-80 relative overflow-hidden bg-[#e9f0e6]">
+<img class="w-full h-full object-cover" data-alt="A set of three stylized, low-poly pine trees for a Roblox game. The trees feature vibrant forest green needle clumps with soft, rounded edges and light green highlights. They sit in a whimsical, sunny forest clearing with warm, golden yellow lighting filtering through the branches. The style is hand-painted and tactile, with visible wood grain textures on the trunks." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7PwI_23Gsd8dOakssE9Rf0dQwKIMISvK6_ILnoDVnrH2vm5mhkimWJneunhMDbQz-IDU_kY4_Nldm0Bsaiq5WipBctkrNpzwj9ym_WKByebPVPQCizJAnXVri_iyWPGcRV8SheM5beBxx_bjLDRn8UOb4ZRBfpfw4UmBp8loXBLfD1IrzVu1lyW78Z9eSA5jCpZ0siIAHG1mLlRaAGSnw5gi_2dtIgxav0pFLPGml09Cewa1se5zVfdnoLcUnPqyhzA7heNu4GbZ4"/>
+<div class="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-label-sm font-label-sm">Essential</div>
+</div>
+<div class="p-6 bg-surface-container">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-headline-sm font-headline-sm text-primary">Stylized Pine Trees</h3>
+<span class="text-tertiary font-bold text-label-lg">3 Variations</span>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mb-4">Modular pine trees with hand-painted textures. Height-scaled for standard R15 avatars (12-18 studs).</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-surface-variant px-3 py-1 rounded-lg text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="straighten">straighten</span> 18s
+                            </span>
+<span class="bg-surface-variant px-3 py-1 rounded-lg text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="texture">texture</span> 512px
+                            </span>
+<span class="bg-surface-variant px-3 py-1 rounded-lg text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="polyline">polyline</span> 450 Tris
+                            </span>
+</div>
+</div>
+</div>
+<!-- Adventure Guild Wooden Sign -->
+<div class="asset-card bg-white rounded-xl overflow-hidden border-2 border-transparent">
+<div class="h-64 relative overflow-hidden bg-[#f3e1b6]">
+<img class="w-full h-full object-cover" data-alt="A stylized wooden sign for an 'Adventure Guild' in a fantasy Roblox game. The sign is made of carved dark earth brown wood with a slightly weathered, tactile look. The lettering 'Adventure Guild' is etched into the wood and glows with a subtle golden yellow light. It is hanging from a sturdy wooden post with thick, rustic ropes in a warm, cozy outdoor setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHtYXbB9eEZJYl5SnthiU_wmdxhiazHKpMi14_lAv9YM5Fd3znhqPv8ytRg8oAJRxLr7dd7MeqEa7IcIAJFrFJV6KqAsrm4KI9Y4ozK9CMUWkQs7VWaHyxTLpUtiScE_Z--KWVxhMUD6kVzgmGFrfx5k2zrJKI87OsbM4Dd1erY8FSVpjXMEoiBG5BtdvpHPyTAPZCecRYKuYOXaGgRuYWNELbXDZfu7Q81sq4P7aSW0a1LtuUf7L2-RJ4k9J-_OgZ7fcegIm-cUPW"/>
+</div>
+<div class="p-6 bg-surface-container">
+<h3 class="text-headline-sm font-headline-sm text-primary mb-2">'Adventure Guild' Sign</h3>
+<p class="text-body-md font-body-md text-on-surface-variant mb-4">Carved oak prop with emission mapping for the text.</p>
+<div class="flex justify-between items-center">
+<span class="text-label-sm font-label-sm text-on-surface-variant opacity-70">Interactive Component</span>
+<span class="material-symbols-outlined text-primary golden-glow" data-icon="magic_button" style="font-variation-settings: 'FILL' 1;">magic_button</span>
+</div>
+</div>
+</div>
+<!-- Glowing Street Lanterns -->
+<div class="asset-card bg-white rounded-xl overflow-hidden border-2 border-transparent">
+<div class="h-64 relative overflow-hidden bg-[#231b00]">
+<img class="w-full h-full object-cover" data-alt="A pair of ornate, stylized street lanterns for a magical forest setting. The lanterns are made of dark wrought iron and contain a warm, glowing golden yellow light source that illuminates the surrounding soft evening mist. The light cast is soft and ambient, creating a sense of wonder and safety. Low-poly aesthetic with smooth, rounded surfaces suitable for a whimsical adventure game." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-PqC4xJxdLtsLps-xbd_6O6vNqwZV26AnhvZjQHZFkv8y-66MQunh-0gSDogsvmz8NqVIksq_7TBDCT1oSu7ACG56b1R65P_qLbhaNPIr7oy1KDndx2fOkJv-dLEo9aTGaLhM0SpAJDZk92wSiZE6KtJ-Z83BjeLd3DuGAAVs-s7wjTNuPA5SBBad1GWN-RE9jVuruqkmaLZUpHKijsrC9LqtsWPB3piEzz6AplCVgekHbsIACUHmOTtyB5DxkIcWs3NSBKg_kZSD"/>
+</div>
+<div class="p-6 bg-surface-container">
+<h3 class="text-headline-sm font-headline-sm text-primary mb-2">Glowing Street Lanterns</h3>
+<p class="text-body-md font-body-md text-on-surface-variant mb-4">Atmospheric lighting with ParticleEmitter support for fireflies.</p>
+<div class="bg-[#F6D77A]/20 border border-[#F6D77A] rounded-lg p-2 text-center">
+<span class="text-label-sm font-label-sm text-tertiary">Feature: Dynamic Lighting</span>
+</div>
+</div>
+</div>
+<!-- Stone Paths -->
+<div class="asset-card md:col-span-2 lg:col-span-1 bg-white rounded-xl overflow-hidden border-2 border-transparent">
+<div class="h-64 relative overflow-hidden bg-[#c3c8bd]">
+<img class="w-full h-full object-cover" data-alt="A collection of stylized, low-poly stone path tiles. The stones are irregular, rounded cobbles in varying shades of slate blue and earthy grey, with small clumps of moss growing between them. The lighting is bright and cheerful, highlighting the tactile, chunky nature of the stones. The tiles are arranged to show how they can be seamlessly repeated for game environment design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBskWM7aM00fpILDRmjf7pYxW7RvBfAu8bLC7B30bES0GB3Adf2u0Zjl8Yz7hlE--_-Y4npBbv2dZkOaWN0BcECM64TiknPXeqbQJHwo9G6FJ-AZ_Gq-Cq8ggTH_nPnsqRGWgONuGqVA18t7fUM7PD7VfVearwpnsQbr1Kb-QTjki4XMYfY3b5l7tsg8zXrLFbFGHoVexvaE3W4AVoKHG097KCiZX2voT8rY-ncBY69Y4x23AkDyYnYqDBTtyjosQOnVdOW3I6UlI_P"/>
+</div>
+<div class="p-6 bg-surface-container">
+<h3 class="text-headline-sm font-headline-sm text-primary mb-2">Mossy Stone Paths</h3>
+<p class="text-body-md font-body-md text-on-surface-variant mb-4">Seamless tileable textures and modular 3D mesh variants for organic roads.</p>
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#434840]"></div>
+<div class="w-6 h-6 rounded-full bg-[#74796f]"></div>
+<div class="w-6 h-6 rounded-full bg-[#c3c8bd]"></div>
+<span class="text-label-sm font-label-sm ml-auto text-on-surface-variant">4 Mesh variants</span>
+</div>
+</div>
+</div>
+<!-- Extra Detail Card: Technical Specs -->
+<div class="asset-card lg:col-span-3 bg-primary-container p-8 rounded-xl flex flex-col md:flex-row items-center gap-8 border-b-4 border-[#4A3F29]">
+<div class="bg-surface-container-highest p-6 rounded-2xl shadow-inner w-full md:w-1/3">
+<h4 class="text-headline-sm font-headline-sm text-on-primary-container mb-4">Avatar Scaling</h4>
+<div class="space-y-4">
+<div class="flex justify-between border-b border-on-primary-container/20 pb-2">
+<span class="text-label-lg font-label-lg">Avatar Height</span>
+<span class="text-label-lg font-label-lg">6.5 Studs</span>
+</div>
+<div class="flex justify-between border-b border-on-primary-container/20 pb-2">
+<span class="text-label-lg font-label-lg">Doorway Frame</span>
+<span class="text-label-lg font-label-lg">8.0 Studs</span>
+</div>
+<div class="flex justify-between">
+<span class="text-label-lg font-label-lg">Lantern Height</span>
+<span class="text-label-lg font-label-lg">7.2 Studs</span>
+</div>
+</div>
+</div>
+<div class="flex-1">
+<h4 class="text-headline-sm font-headline-sm text-on-primary-container mb-2">Performance Guaranteed</h4>
+<p class="text-body-lg font-body-lg text-on-primary-container/90 mb-6">All environmental assets in the Wildwood collection are optimized for mobile-first Roblox experiences. Texture budgets are capped at 1024px to ensure fast loading times while maintaining tactile fidelity.</p>
+<button class="bg-secondary-container text-on-secondary-container px-8 py-3 rounded-full font-bold shadow-lg hover:bg-surface-variant transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+                            Download Full Pack (.rbxm)
+                        </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 h-20 bg-surface-container shadow-[0_-8px_20px_rgba(74,63,41,0.1)] rounded-t-xl md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-2 opacity-70" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="text-label-sm font-label-sm">Catalog</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-2 opacity-70" href="#">
+<span class="material-symbols-outlined" data-icon="star">star</span>
+<span class="text-label-sm font-label-sm">Favorites</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-2xl px-6 py-2 shadow-inner scale-110" href="#">
+<span class="material-symbols-outlined" data-icon="download" style="font-variation-settings: 'FILL' 1;">download</span>
+<span class="text-label-sm font-label-sm">Assets</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-2 opacity-70" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-sm font-label-sm">Settings</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for hover states on non-touch devices
+        document.querySelectorAll('.asset-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                const icon = card.querySelector('.material-symbols-outlined');
+                if (icon) {
+                    icon.style.transition = 'transform 0.3s ease';
+                    icon.style.transform = 'scale(1.2) rotate(5deg)';
+                }
+            });
+            card.addEventListener('mouseleave', () => {
+                const icon = card.querySelector('.material-symbols-outlined');
+                if (icon) {
+                    icon.style.transform = 'scale(1) rotate(0deg)';
+                }
+            });
+        });
+
+        // Floating particle effect for the background
+        const createParticle = () => {
+            const particle = document.createElement('div');
+            particle.style.position = 'fixed';
+            particle.style.width = '4px';
+            particle.style.height = '4px';
+            particle.style.backgroundColor = '#F6D77A';
+            particle.style.borderRadius = '50%';
+            particle.style.opacity = '0.4';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '1';
+            
+            const startX = Math.random() * window.innerWidth;
+            const startY = window.innerHeight + 10;
+            
+            particle.style.left = startX + 'px';
+            particle.style.top = startY + 'px';
+            
+            document.body.appendChild(particle);
+            
+            const animation = particle.animate([
+                { transform: 'translateY(0) translateX(0)', opacity: 0.4 },
+                { transform: `translateY(-${window.innerHeight + 20}px) translateX(${Math.random() * 100 - 50}px)`, opacity: 0 }
+            ], {
+                duration: Math.random() * 10000 + 5000,
+                easing: 'linear'
+            });
+            
+            animation.onfinish = () => particle.remove();
+        };
+
+        setInterval(createParticle, 2000);
+    </script>
+</body></html>

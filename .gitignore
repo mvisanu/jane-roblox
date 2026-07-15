@@ -1,0 +1,7 @@
+sourcemap.json
+build/
+__pycache__/
+*.pyc
+*.lock
+*.tmp
+.DS_Store
