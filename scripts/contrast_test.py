@@ -62,7 +62,8 @@ def boot():
         mock.registerModule(module, modules[module])
 
     theme = load(ROOT / "src/StarterPlayer/StarterPlayerScripts/UI/Theme.lua", "@Theme")()
-    return theme, modules["Catalog"], modules["Config"], modules["Furniture"]
+    adaptive = load(shared / "AdaptiveWorldText.lua", "@AdaptiveWorldText")()
+    return theme, modules["Catalog"], modules["Config"], modules["Furniture"], adaptive, modules["WildwoodStyle"]
 
 
 def rgb(color):
@@ -74,7 +75,7 @@ def main() -> int:
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
-    theme, catalog, config, furniture = boot()
+    theme, catalog, config, furniture, adaptive, style = boot()
     colors = theme.Colors
     failures = []
     checked = 0
@@ -126,6 +127,25 @@ def main() -> int:
             failures.append(f"{name} {rgb(fill)}: best text ({label}) is only {ratio:.2f}:1, needs {AA}:1")
         if args.verbose:
             print(f"  {name:22} {str(rgb(fill)):18} -> {label:5} {ratio:5.2f}:1")
+
+    # Background-free world labels raycast through their screen position and
+    # choose dark or light text from the sampled scene. Prove both branches,
+    # especially the requested switch to light text over a dark night/forest.
+    adaptive_backdrops = {
+        "adaptive:dark-night": (style.World.NightSky, rgb(adaptive.LightText)),
+        "adaptive:light-canvas": (style.World.CanvasLight, rgb(adaptive.DarkText)),
+        "adaptive:mid-water": (style.World.WaterLight, None),
+    }
+    for name, (fill, expected) in adaptive_backdrops.items():
+        checked += 1
+        text = adaptive.textFor(fill)
+        ratio = float(adaptive.contrast(text, fill))
+        if ratio < AA:
+            failures.append(f"{name} {rgb(fill)}: adaptive text is only {ratio:.2f}:1, needs {AA}:1")
+        if expected is not None and rgb(text) != expected:
+            failures.append(f"{name}: selected {rgb(text)}, expected {expected}")
+        if args.verbose:
+            print(f"  {name:22} {str(rgb(fill)):18} -> {str(rgb(text)):15} {ratio:5.2f}:1")
 
     # Body copy sits directly on the panel.
     for name, text, fill in (

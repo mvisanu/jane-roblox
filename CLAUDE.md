@@ -65,10 +65,11 @@ Because a Roblox `BasePart` colour covers every face, these parts show the selec
 
 ## Required verification
 
-Run validation and all 21 regression tests before claiming completion:
+Run validation and all 22 regression tests before claiming completion:
 
 ```powershell
 python scripts/validate.py CuteFamilyTown-Wildwood.rbxlx
+python scripts/adventure_guild_test.py
 python scripts/avatar_outfit_test.py
 python scripts/bag_inventory_test.py
 python scripts/bakery_bay_town_palette_test.py
@@ -94,6 +95,7 @@ python scripts/wildwood_redesign_test.py
 
 The most relevant guards are:
 
+- `adventure_guild_test.py`: balanced three-way centre, physical Guild actions, and server-enforced hub-only map travel.
 - `furniture_test.py`: exclusive preview-before-purchase, exact confirmed pose, no charge on invalid/cancelled previews, collision, move/rotate/pack, persistence, all 51 items and XP.
 - `home_paint_test.py`: exactly eight paint targets and every other cottage part unchanged across all swatches and rejoin.
 - `bakery_bay_town_palette_test.py`: centralized Bakery Bay and Woodland Canopy colours.

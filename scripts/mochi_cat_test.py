@@ -108,8 +108,19 @@ def main() -> int:
 
     world_label = pet.PrimaryPart.FindFirstChild(pet.PrimaryPart, "WorldLabel")
     label = world_label and world_label.FindFirstChild(world_label, "Text")
-    if not label or label.Text != "Mochi":
-        failures.append("the first spawned black cat is not visibly named Mochi")
+    if not label or label.Text != "โมจิ / Mochi":
+        failures.append("the first spawned black cat is not visibly named โมจิ / Mochi")
+    elif (
+        label.BackgroundTransparency != 1
+        or label.TextSize != 16
+        or label.TextScaled
+        or not lua.eval("function(item) return item.Font == Enum.Font.GothamMedium end")(label)
+    ):
+        failures.append("Mochi's name is not 16px GothamMedium on a fully transparent background")
+    if world_label and not world_label.GetAttribute(world_label, "AdaptiveContrast"):
+        failures.append("Mochi's name is not marked for automatic background contrast")
+    if label and label.FindFirstChildOfClass(label, "UIStroke"):
+        failures.append("Mochi's background/border box still exists")
 
     if failures:
         print("Mochi cat failed:")
@@ -120,7 +131,8 @@ def main() -> int:
     print(
         "Mochi Voxel cat passed: black cuboid head/body, rectangular eyes and four block paws contain "
         "no spheres; ears are triangular wedges; the four-piece tail rises in steps; the pale-pink "
-        "downward triangle nose and omega cat mouth remain visible."
+        "downward triangle nose and omega cat mouth remain visible; its 16px GothamMedium name is "
+        "background-free and marked for adaptive contrast."
     )
     return 0
 

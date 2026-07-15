@@ -304,7 +304,7 @@ def luau_to_lua(source: str) -> str:
     return re.sub(r"(\S+)\s*([+\-*/])=\s*(.+)$", r"\1 = \1 \2 \3", source, flags=re.MULTILINE)
 
 
-def load_world(verbose: bool):
+def load_world(verbose: bool, include_home_signs: bool = False):
     """Run the real WorldService against the mocked engine and return its parts."""
     lua = LuaRuntime(unpack_returned_tuples=True)
 
@@ -349,6 +349,16 @@ def load_world(verbose: bool):
     parts = [dict(rows[index]) for index in range(1, len(rows) + 1)]
     if verbose:
         print(f"Generated {len(parts)} parts")
+    if include_home_signs:
+        sign_rows = mock.exportHomeSigns()
+        signs = [dict(sign_rows[index]) for index in range(1, len(sign_rows) + 1)]
+        map_data = world.GetMapData(world, player)
+        home_blips = [
+            dict(map_data.Blips[index])
+            for index in range(1, len(map_data.Blips) + 1)
+            if map_data.Blips[index].Kind == "Home"
+        ]
+        return parts, waypoints, signs, home_blips
     return parts, waypoints
 
 

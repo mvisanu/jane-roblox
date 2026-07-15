@@ -15,6 +15,7 @@ local CafeModels = require(Shared:WaitForChild("CafeModels"))
 local Config = require(Shared:WaitForChild("Config"))
 local HudLayout = require(Shared:WaitForChild("HudLayout"))
 local RemoteNames = require(Shared:WaitForChild("RemoteNames"))
+local AdaptiveWorldText = require(Shared:WaitForChild("AdaptiveWorldText"))
 
 local UI = script.Parent:WaitForChild("UI")
 local Components = require(UI:WaitForChild("Components"))
@@ -26,6 +27,7 @@ local Theme = require(UI:WaitForChild("Theme"))
 local Minimap = require(UI:WaitForChild("Minimap"))
 local QuestBoard = require(UI:WaitForChild("QuestBoard"))
 local QuestNavigator = require(UI:WaitForChild("QuestNavigator"))
+local RiverController = require(UI:WaitForChild("RiverController"))
 local FurnitureShop = require(UI:WaitForChild("FurnitureShop"))
 local HomePalette = require(UI:WaitForChild("HomePalette"))
 
@@ -33,6 +35,7 @@ local remoteFolder = ReplicatedStorage:WaitForChild(RemoteNames.Folder)
 local requestRemote = remoteFolder:WaitForChild(RemoteNames.Request)
 local stateChanged = remoteFolder:WaitForChild(RemoteNames.StateChanged)
 local toastRemote = remoteFolder:WaitForChild(RemoteNames.Toast)
+local guildActionRemote = remoteFolder:WaitForChild(RemoteNames.GuildAction)
 
 local state
 local currentMenu = "Home"
@@ -41,7 +44,9 @@ local navButtons = {}
 local questBoard
 local questNavigator
 local furnitureShop
+local guildMapAccess = false
 local environmentController = EnvironmentController.new()
+local riverController = RiverController.new(player)
 
 local function bilingual(english, thai)
 	return string.format("%s\n%s", thai, english)
@@ -501,7 +506,11 @@ local labelClock = 0
 local function trackLabel(labelGui)
 	local text = labelGui:FindFirstChild("Text")
 	if text then
-		trackedLabels[labelGui] = { Text = text, Stroke = text:FindFirstChildOfClass("UIStroke") }
+		trackedLabels[labelGui] = {
+			Text = text,
+			Stroke = text:FindFirstChildOfClass("UIStroke"),
+			Adaptive = labelGui:GetAttribute("AdaptiveContrast") == true,
+		}
 	end
 end
 
@@ -536,8 +545,15 @@ local function refreshLabels()
 				-- as the player backs away instead of blinking off.
 				local fade = math.clamp((distance - near) / math.max(far - near, 1), 0, 1)
 				labelGui.Enabled = true
+				if parts.Adaptive then
+					local labelPosition = adornee.Position + Vector3.new(0, adornee.Size.Y / 2 + 2, 0)
+					AdaptiveWorldText.update(parts.Text, camera, labelPosition, { adornee.Parent })
+					parts.Text.BackgroundTransparency = 1
+					parts.Text.TextStrokeTransparency = 0.08 + fade * 0.92
+				else
+					parts.Text.BackgroundTransparency = 0.08 + fade * 0.92
+				end
 				parts.Text.TextTransparency = fade
-				parts.Text.BackgroundTransparency = 0.08 + fade * 0.92
 				if parts.Stroke then
 					parts.Stroke.Transparency = fade
 				end
@@ -664,6 +680,20 @@ end
 local function addButton(text, color, action, payload)
 	local button = Components.button(body, text, color, function()
 		invoke(action, payload)
+	end)
+	button.LayoutOrder = nextOrder()
+	button.TextSize = HudLayout.CONTROL_TEXT_SIZE
+	return button
+end
+
+local function addGuildTravelButton(text, color, destination)
+	local button = Components.button(body, text, color, function()
+		invoke("Teleport", { destination = destination }, false, function(ok)
+			if ok then
+				guildMapAccess = false
+				panel.Visible = false
+			end
+		end)
 	end)
 	button.LayoutOrder = nextOrder()
 	button.TextSize = HudLayout.CONTROL_TEXT_SIZE
@@ -976,7 +1006,10 @@ renderMenu = function(menu)
 		addButton(bilingual("Give a snack - 5 coins", "ให้ขนม - 5 เหรียญ"), Theme.Colors.Primary, "PetFeed", {})
 		addButton(bilingual("Play together", "เล่นด้วยกัน"), Theme.Colors.Slate, "PetPlay", {})
 		addButton(bilingual("Bubble bath", "อาบน้ำฟองสบู่"), Theme.Colors.Water, "PetBath", {})
-		addButton(bilingual("Visit the Pet Shop", "ไปร้านสัตว์เลี้ยง"), Theme.Colors.Water, "Teleport", { destination = "PetShop" })
+		addText(bilingual(
+			"Use the map station at Adventure Guild to travel to the Pet Shop.",
+			"ไปที่จุดแผนที่ของ Adventure Guild เพื่อเดินทางไปร้านสัตว์เลี้ยง"
+		), 48)
 	elseif menu == "Cafe" then
 		if not state.Cafe.Unlocked then
 			addHeading(bilingual("Open your family cafe", "เปิดคาเฟ่ครอบครัวของคุณ"))
@@ -1023,7 +1056,10 @@ renderMenu = function(menu)
 				)
 			end
 		end
-		addButton(bilingual("Go to the Cafe", "ไปคาเฟ่"), Theme.Colors.Sun, "Teleport", { destination = "Cafe" })
+		addText(bilingual(
+			"Use the map station at Adventure Guild to travel to the Cafe.",
+			"ไปที่จุดแผนที่ของ Adventure Guild เพื่อเดินทางไปคาเฟ่"
+		), 48)
 	elseif menu == "Adventure" then
 		local adventure = state.Adventure
 		local camp = Catalog.CampLevels[adventure.CampLevel]
@@ -1034,7 +1070,10 @@ renderMenu = function(menu)
 				string.format("กิจกรรมฤดูกาล: %s - %s", adventure.SeasonEvent.NameThai, adventure.SeasonEvent.DescriptionThai)
 			), 62)
 		end
-		addButton(bilingual("Go to Adventure Camp", "ไปแคมป์ผจญภัย"), Config.AdventurePalette.SunsetOrange, "Teleport", { destination = "AdventureCamp" })
+		addText(bilingual(
+			"Adventure travel begins at the map station in the town-centre Guild.",
+			"การเดินทางผจญภัยเริ่มที่จุดแผนที่ของกิลด์ตรงกลางเมือง"
+		), 48)
 
 		-- What the next camp wants, item by item, with what is already in the bag
 		-- beside it. This used to be a single line of text listing the cost and a
@@ -1081,11 +1120,9 @@ renderMenu = function(menu)
 			local discovered = adventure.Discoveries[zoneId]
 			local englishStatus = discovered and "Discovered" or "Explore"
 			local thaiStatus = discovered and "ค้นพบแล้ว" or "ออกสำรวจ"
-			addButton(
+			addText(
 				bilingual(string.format("%s: %s", englishStatus, zone.DisplayName), string.format("%s: %s", thaiStatus, zone.DisplayNameThai)),
-				zoneId == "RiverAdventure" and Config.AdventurePalette.RiverBlue or Config.AdventurePalette.ForestGreen,
-				"Teleport",
-				{ destination = zoneId }
+				44
 			)
 		end
 
@@ -1202,14 +1239,12 @@ renderMenu = function(menu)
 		for _, zoneId in ipairs(Catalog.AdventureZoneOrder) do
 			local zone = Catalog.AdventureZones[zoneId]
 			local resource = Catalog.AdventureResources[zone.Resource]
-			addButton(
+			addText(
 				bilingual(
 					string.format("%s  %s - find %s", resource.Icon, zone.DisplayName, resource.DisplayName),
 					string.format("%s  %s - หา%s", resource.Icon, zone.DisplayNameThai, resource.DisplayNameThai)
 				),
-				zoneId == "RiverAdventure" and Config.AdventurePalette.RiverBlue or Config.AdventurePalette.ForestGreen,
-				"Teleport",
-				{ destination = zoneId }
+				44
 			)
 		end
 	elseif menu == "Style" then
@@ -1240,12 +1275,20 @@ renderMenu = function(menu)
 		end)
 		avatarGrid.LayoutOrder = nextOrder()
 	elseif menu == "Map" then
-		addHeading(bilingual("Where shall we go?", "อยากไปที่ไหน?"))
-		addText(bilingual("Tap a place to travel there safely.", "แตะสถานที่เพื่อเดินทางอย่างปลอดภัย"))
-		addButton(bilingual("My Home", "บ้านของฉัน"), Theme.Colors.Primary, "Teleport", { destination = "Home" })
+		if not guildMapAccess then
+			addHeading(bilingual("Travel from Adventure Guild", "เดินทางจาก Adventure Guild"))
+			addText(bilingual(
+				"Walk to the central pillar in the middle of town and use 🗺️ OPEN MAP. All map warps begin there.",
+				"ไปที่เสากลางเมือง แล้วใช้จุด 🗺️ เปิดแผนที่ การวาร์ปทุกแห่งเริ่มจากตรงนั้น"
+			), 82)
+			return
+		end
+		addHeading(bilingual("Adventure Guild map", "แผนที่ Adventure Guild"))
+		addText(bilingual("Choose one destination. To travel again, return to the central pillar.", "เลือกหนึ่งจุดหมาย หากต้องการเดินทางอีกครั้งให้กลับมาที่เสากลาง"))
+		addGuildTravelButton(bilingual("My Home", "บ้านของฉัน"), Theme.Colors.Primary, "Home")
 		for _, destination in ipairs({ "Town", "Cafe", "PetShop", "FlowerShop", "Playground", "School", "Park", "Lake", "Beach", "Forest", "AdventureCamp", "WildwoodForest", "Mountain", "RiverAdventure", "MysteryCave" }) do
 			local english = destination:gsub("(%l)(%u)", "%1 %2")
-			addButton(bilingual(english, DESTINATION_THAI[destination]), Theme.Colors.Water, "Teleport", { destination = destination })
+			addGuildTravelButton(bilingual(english, DESTINATION_THAI[destination]), Theme.Colors.Water, destination)
 		end
 	end
 end
@@ -1282,6 +1325,9 @@ for index, name in ipairs({ "Home", "Garden", "Pet", "Cafe", "Adventure", "Bag",
 	indicator.Parent = button
 	Components.corner(indicator, UDim.new(1, 0))
 	button.Activated:Connect(function()
+		if name == "Map" then
+			guildMapAccess = false
+		end
 		panelOffset = nil
 		renderMenu(name)
 	end)
@@ -1328,7 +1374,7 @@ toastRemote.OnClientEvent:Connect(showToast)
 questNavigator = QuestNavigator.new(gui, Theme, Catalog, Config, bilingual)
 
 -- The quest board stays in the upper-left: a compact header while hidden and
--- the same large reading panel while open. Opening it dismisses the activity panel.
+-- a half-size scrolling window while open. Opening it dismisses the activity panel.
 questBoard = QuestBoard.new(gui, Theme, Components, Catalog, Config, bilingual, function(action, payload)
 	invoke(action, payload)
 end, function(kind)
@@ -1336,6 +1382,23 @@ end, function(kind)
 end, function(open)
 	if open then
 		panel.Visible = false
+	end
+end)
+
+-- The three physical stations around the central pillar are the only shortcuts
+-- into Guild services. Map access is deliberately granted only by its station;
+-- GameService independently checks the player's distance before every warp.
+guildActionRemote.OnClientEvent:Connect(function(action)
+	panelOffset = nil
+	if action == "Quest" then
+		panel.Visible = false
+		questBoard:SetOpen(true)
+	elseif action == "Map" then
+		guildMapAccess = true
+		renderMenu("Map")
+	elseif action == "Animals" then
+		guildMapAccess = false
+		renderMenu("Pet")
 	end
 end)
 if state then

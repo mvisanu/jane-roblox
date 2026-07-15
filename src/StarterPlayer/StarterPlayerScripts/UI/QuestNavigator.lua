@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local QuestGuide = require(Shared:WaitForChild("QuestGuide"))
+local AdaptiveWorldText = require(Shared:WaitForChild("AdaptiveWorldText"))
 
 local QuestNavigator = {}
 QuestNavigator.__index = QuestNavigator
@@ -11,7 +12,15 @@ QuestNavigator.__index = QuestNavigator
 local TARGET_REFRESH_SECONDS = 0.35
 local ARRIVAL_DISTANCE = 10
 local RESUME_DISTANCE = 16
-local TRAIL_SEGMENT_LENGTH = 9
+local NAVIGATION_SOFTNESS = 0.5
+local TRAIL_BASE_WIDTH = 0.72
+local TRAIL_WIDTH = TRAIL_BASE_WIDTH * NAVIGATION_SOFTNESS
+local TRAIL_DASH_LENGTH = 3.2
+local TRAIL_GAP_LENGTH = 2.8
+local TRAIL_PERIOD = TRAIL_DASH_LENGTH + TRAIL_GAP_LENGTH
+local TRAIL_OPACITY = 0.57 * NAVIGATION_SOFTNESS
+local COLUMN_OPACITY = 0.38 * NAVIGATION_SOFTNESS
+local RING_OPACITY = 0.48 * NAVIGATION_SOFTNESS
 local MAX_TRAIL_SEGMENTS = 80
 
 local function label(parent, name, text, size, position, font, textSize)
@@ -45,6 +54,11 @@ function QuestNavigator.new(parent, theme, catalog, config, bilingual)
 	self._trailParts = {}
 	self._trailSegments = 0
 	self._trailVisible = false
+	-- Blend the original gold halfway toward the neutral surface colour and
+	-- halve every glow opacity/brightness. The route remains recognizable but
+	-- no longer competes with the world around it.
+	local navigationColor = theme.Colors.Sun:Lerp(theme.Colors.Surface, NAVIGATION_SOFTNESS)
+	self._navigationColor = navigationColor
 
 	local markerFolder = Instance.new("Folder")
 	markerFolder.Name = "LocalQuestWaypoint"
@@ -73,9 +87,9 @@ function QuestNavigator.new(parent, theme, catalog, config, bilingual)
 	column.CanCollide = false
 	column.CanQuery = false
 	column.CanTouch = false
-	column.Color = theme.Colors.Sun
+	column.Color = navigationColor
 	column.Material = Enum.Material.Neon
-	column.Size = Vector3.new(0.35, 12, 0.35)
+	column.Size = Vector3.new(0.35 * NAVIGATION_SOFTNESS, 12, 0.35 * NAVIGATION_SOFTNESS)
 	column.Transparency = 1
 	column.Parent = markerFolder
 	self._column = column
@@ -86,18 +100,18 @@ function QuestNavigator.new(parent, theme, catalog, config, bilingual)
 	ring.CanCollide = false
 	ring.CanQuery = false
 	ring.CanTouch = false
-	ring.Color = theme.Colors.Sun
+	ring.Color = navigationColor
 	ring.Material = Enum.Material.Neon
 	ring.Shape = Enum.PartType.Cylinder
-	ring.Size = Vector3.new(0.18, 7, 7)
+	ring.Size = Vector3.new(0.18 * NAVIGATION_SOFTNESS, 7, 7)
 	ring.Transparency = 1
 	ring.Parent = markerFolder
 	self._ring = ring
 
 	local navigationLight = Instance.new("PointLight")
 	navigationLight.Name = "NavigationLight"
-	navigationLight.Brightness = 0.75
-	navigationLight.Color = theme.Colors.Sun
+	navigationLight.Brightness = 0.75 * NAVIGATION_SOFTNESS
+	navigationLight.Color = navigationColor
 	navigationLight.Enabled = false
 	navigationLight.Range = 18
 	navigationLight.Shadows = false
@@ -110,30 +124,39 @@ function QuestNavigator.new(parent, theme, catalog, config, bilingual)
 	billboard.AlwaysOnTop = true
 	billboard.LightInfluence = 0
 	billboard.MaxDistance = 2200
-	billboard.Size = UDim2.fromOffset(210, 70)
+	billboard.Size = UDim2.fromOffset(190, 52)
 	billboard.StudsOffset = Vector3.new(0, 8.5, 0)
 	billboard.Enabled = false
+	billboard:SetAttribute("AdaptiveContrast", true)
 	billboard.Parent = marker
 	self._billboard = billboard
 
-	local markerText = label(billboard, "Text", "", UDim2.fromScale(1, 1), nil, Enum.Font.GothamBold, 15)
-	markerText.BackgroundColor3 = theme.Colors.PrimaryDark
-	markerText.BackgroundTransparency = 0.34
-	markerText.TextColor3 = theme.Colors.Sun
-	local markerCorner = Instance.new("UICorner")
-	markerCorner.CornerRadius = UDim.new(0, 12)
-	markerCorner.Parent = markerText
-	local markerStroke = Instance.new("UIStroke")
-	markerStroke.Color = Color3.fromRGB(255, 255, 255)
-	markerStroke.Thickness = 2
-	markerStroke.Transparency = 0.35
-	markerStroke.Parent = markerText
+	local markerText = label(billboard, "Text", "", UDim2.fromScale(1, 1), nil, theme.Fonts.Body, 16)
+	markerText.BackgroundTransparency = 1
+	AdaptiveWorldText.apply(markerText, AdaptiveWorldText.defaultBackdrop())
 	self._markerText = markerText
 
 	self._connection = RunService.RenderStepped:Connect(function(deltaTime)
 		self:_render(deltaTime)
 	end)
 	return self
+end
+
+function QuestNavigator:_refreshLabelContrast()
+	if not self._billboard.Enabled or not self._target then
+		return
+	end
+	local exclusions = { self._markerFolder }
+	local character = self._player and self._player.Character
+	if character then
+		table.insert(exclusions, character)
+	end
+	AdaptiveWorldText.update(
+		self._markerText,
+		workspace.CurrentCamera,
+		self._target + Vector3.new(0, 9.5, 0),
+		exclusions
+	)
 end
 
 function QuestNavigator:_ownedHome()
@@ -194,8 +217,8 @@ function QuestNavigator:_setNavigationVisible(visible)
 	self._billboard.Enabled = visible
 	-- The destination glow is intentionally subtle: it remains readable at
 	-- night without becoming an opaque wall during the day.
-	self._column.Transparency = visible and 0.62 or 1
-	self._ring.Transparency = visible and 0.52 or 1
+	self._column.Transparency = visible and 1 - COLUMN_OPACITY or 1
+	self._ring.Transparency = visible and 1 - RING_OPACITY or 1
 	self._navigationLight.Enabled = visible
 	if not visible then
 		self:_hideTrail()
@@ -214,7 +237,7 @@ function QuestNavigator:_trailPart(index)
 	trailPart.CanQuery = false
 	trailPart.CanTouch = false
 	trailPart.CastShadow = false
-	trailPart.Color = self._theme.Colors.Sun
+	trailPart.Color = self._navigationColor
 	trailPart.Material = Enum.Material.Neon
 	trailPart.Transparency = 1
 	trailPart.Parent = self._trailFolder
@@ -244,7 +267,9 @@ function QuestNavigator:_drawGroundTrail(startPosition)
 		return
 	end
 
-	local segmentCount = math.clamp(math.ceil(distance / TRAIL_SEGMENT_LENGTH), 2, MAX_TRAIL_SEGMENTS)
+	local dashCount = math.clamp(math.ceil(distance / TRAIL_PERIOD), 2, MAX_TRAIL_SEGMENTS)
+	local actualPeriod = distance / dashCount
+	local dashLength = math.min(TRAIL_DASH_LENGTH, actualPeriod * 0.58)
 	local exclusions = { self._markerFolder }
 	local character = self._player and self._player.Character
 	if character then
@@ -265,25 +290,29 @@ function QuestNavigator:_drawGroundTrail(startPosition)
 	raycastParams.FilterDescendantsInstances = exclusions
 	raycastParams.IgnoreWater = true
 
-	local points = {}
-	for index = 0, segmentCount do
-		local sample = startPosition:Lerp(self._target, index / segmentCount)
-		points[index + 1] = self:_groundPoint(sample, raycastParams)
-	end
-	for index = 1, segmentCount do
-		local from = points[index]
-		local to = points[index + 1]
+	local direction = difference.Unit
+	local rendered = 0
+	for index = 1, dashCount do
+		-- Each part covers only the dash, never the following gap. Raycasting both
+		-- ends separately keeps every short dash resting on uneven ground.
+		local fromDistance = (index - 1) * actualPeriod
+		local toDistance = math.min(fromDistance + dashLength, distance)
+		local from = self:_groundPoint(startPosition + direction * fromDistance, raycastParams)
+		local to = self:_groundPoint(startPosition + direction * toDistance, raycastParams)
 		local length = (to - from).Magnitude
-		local trailPart = self:_trailPart(index)
-		trailPart.Size = Vector3.new(0.72, 0.08, length + 0.18)
-		trailPart.CFrame = CFrame.lookAt((from + to) / 2, to)
-		trailPart.Transparency = 0.43
+		if length > 0.05 then
+			rendered += 1
+			local trailPart = self:_trailPart(rendered)
+			trailPart.Size = Vector3.new(TRAIL_WIDTH, 0.06, length)
+			trailPart.CFrame = CFrame.lookAt((from + to) / 2, to)
+			trailPart.Transparency = 1 - TRAIL_OPACITY
+		end
 	end
-	for index = segmentCount + 1, #self._trailParts do
+	for index = rendered + 1, #self._trailParts do
 		self._trailParts[index].Transparency = 1
 	end
-	self._trailSegments = segmentCount
-	self._trailVisible = true
+	self._trailSegments = rendered
+	self._trailVisible = rendered > 0
 end
 
 function QuestNavigator:_setTarget(position)
@@ -302,6 +331,7 @@ function QuestNavigator:_setTarget(position)
 	self._marker.CFrame = CFrame.new(position + Vector3.new(0, 1, 0))
 	self._column.CFrame = CFrame.new(position + Vector3.new(0, 6, 0))
 	self._ring.CFrame = CFrame.new(position + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	self:_refreshLabelContrast()
 end
 
 function QuestNavigator:Track(action, description, descriptionThai)
@@ -386,6 +416,7 @@ function QuestNavigator:UpdatePathFrom(playerPosition)
 	local visible = self._action ~= nil and not self._arrived
 	self:_setNavigationVisible(visible)
 	if visible then
+		self:_refreshLabelContrast()
 		self:_drawGroundTrail(playerPosition - Vector3.new(0, 3, 0))
 	end
 	return distance
@@ -401,6 +432,18 @@ function QuestNavigator:GetDebugState()
 		WaypointVisible = self._billboard.Enabled,
 		NavigationLightEnabled = self._navigationLight.Enabled,
 		WaypointTransparency = self._column.Transparency,
+		WaypointBackgroundTransparency = self._markerText.BackgroundTransparency,
+		WaypointTextSize = self._markerText.TextSize,
+		WaypointAdaptive = self._markerText:GetAttribute("AdaptiveWorldText") == true,
+		WaypointText = self._markerText.Text,
+		NavigationSoftness = NAVIGATION_SOFTNESS,
+		NavigationLightBrightness = self._navigationLight.Brightness,
+		NavigationColor = self._navigationColor,
+		TrailWidth = TRAIL_WIDTH,
+		TrailDashLength = TRAIL_DASH_LENGTH,
+		TrailGapLength = TRAIL_GAP_LENGTH,
+		TrailTransparency = 1 - TRAIL_OPACITY,
+		TrailIsDashed = TRAIL_GAP_LENGTH > 0,
 	}
 end
 

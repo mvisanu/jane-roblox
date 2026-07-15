@@ -1,4 +1,4 @@
-"""Checks that the Quest menu stays upper-left, keeps its size, and can hide."""
+"""Checks the half-size Quest menu, enlarged type, scrolling, and hide control."""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ from quest_chain_test import boot
 
 ROOT = Path(__file__).resolve().parents[1]
 VIEWPORTS = {
-    (640, 360): (486, 170),
-    (844, 390): (620, 200),
-    (390, 844): (300, 620),
-    (1024, 768): (620, 578),
-    (1366, 768): (620, 578),
-    (1868, 1186): (620, 620),
-    (2560, 1440): (620, 620),
+    (640, 360): ((486, 170), (243, 85)),
+    (844, 390): ((620, 200), (310, 100)),
+    (390, 844): ((300, 620), (150, 310)),
+    (1024, 768): ((620, 578), (310, 289)),
+    (1366, 768): ((620, 578), (310, 289)),
+    (1868, 1186): ((620, 620), (310, 310)),
+    (2560, 1440): ((620, 620), (310, 310)),
 }
 
 
@@ -25,15 +25,21 @@ def main() -> int:
     layout = modules["QuestBoardLayout"]
     failures: list[str] = []
 
-    for (width, height), expected_size in VIEWPORTS.items():
+    if float(layout.OPEN_SCALE_FROM_ORIGINAL) != 0.5:
+        failures.append("open Quest menu is not scaled to exactly 50% of its original geometry")
+
+    for (width, height), (original_size, expected_size) in VIEWPORTS.items():
         opened = layout.open(width, height)
         if int(opened.X) != int(layout.MARGIN) or int(opened.Y) != int(layout.TOP_SAFE):
             failures.append(f"{width}x{height}: open Quest menu is not fixed at upper-left")
-        if (int(opened.Width), int(opened.Height)) != expected_size:
+        actual_size = (int(opened.Width), int(opened.Height))
+        if actual_size != expected_size:
             failures.append(
-                f"{width}x{height}: open size changed to {int(opened.Width)}x{int(opened.Height)}, "
-                f"expected previous {expected_size[0]}x{expected_size[1]}"
+                f"{width}x{height}: open size is {actual_size[0]}x{actual_size[1]}, "
+                f"expected 50% size {expected_size[0]}x{expected_size[1]}"
             )
+        if actual_size != tuple(value // 2 for value in original_size):
+            failures.append(f"{width}x{height}: open geometry is not half of its original size")
         if not layout.insideScreen(width, height, opened):
             failures.append(f"{width}x{height}: open Quest menu leaves the screen")
         if float(opened.Y) < float(layout.TOP_SAFE) - 1:
@@ -49,6 +55,21 @@ def main() -> int:
         if not layout.insideScreen(width, height, closed):
             failures.append(f"{width}x{height}: hidden Quest header leaves the screen")
 
+    enlarged_type = {
+        "HEADER_TEXT_SIZE": 15,
+        "TOGGLE_TEXT_SIZE": 13,
+        "SECTION_TEXT_SIZE": 13,
+        "BODY_TEXT_SIZE": 14,
+        "PROMINENT_TEXT_SIZE": 16,
+        "TITLE_TEXT_SIZE": 18,
+        "STEP_TEXT_SIZE": 15,
+        "BUTTON_TEXT_SIZE": 13,
+        "SMALL_TEXT_SIZE": 12,
+    }
+    for name, previous_size in enlarged_type.items():
+        if int(getattr(layout, name)) <= previous_size:
+            failures.append(f"{name} was not enlarged beyond its previous {previous_size}px size")
+
     source = (ROOT / "src/StarterPlayer/StarterPlayerScripts/UI/QuestBoard.lua").read_text(encoding="utf-8")
     contracts = {
         "panel.AnchorPoint = Vector2.new(0, 0)": "Quest panel is not top-left anchored",
@@ -57,9 +78,14 @@ def main() -> int:
         "self._body.Visible = open": "Quest contents cannot be hidden",
         "self:SetOpen(not self._open)": "Quest header no longer toggles open/hidden",
         'self._bilingual("CLOSE", "ปิด")': "Quest menu has no visible close control",
-        "UDim2.fromOffset(54, 0), 15, true)": "Quest header text was not enlarged",
-        "), 18, true, theme.Colors.PrimaryDark)": "chapter title is smaller than 18px",
-        "), 15, active, tone)": "quest-step text is smaller than 15px",
+        "geometry.Width < 260": "narrow half-size Quest menu does not use its compact header",
+        "self._questIcon.Visible = not compactHeader": "compact header does not reclaim icon space",
+        "QuestBoardLayout.HEADER_TEXT_SIZE": "Quest header is not using enlarged type",
+        "QuestBoardLayout.TITLE_TEXT_SIZE": "chapter title is not using enlarged type",
+        "QuestBoardLayout.STEP_TEXT_SIZE": "quest-step text is not using enlarged type",
+        "AutomaticCanvasSize = Enum.AutomaticSize.Y": "Quest content does not expand its scrolling canvas",
+        "label.AutomaticSize = Enum.AutomaticSize.Y": "wrapped Quest text cannot grow vertically",
+        "label.TextWrapped = true": "Quest text no longer wraps inside the smaller window",
         "ScrollBarThickness = 7": "Quest scrollbar is too narrow",
     }
     for contract, message in contracts.items():
@@ -72,8 +98,8 @@ def main() -> int:
             print(f"  - {failure}")
         return 1
     print(
-        "Quest board layout passed: fixed upper-left position across 7 phone/desktop viewports, "
-        "unchanged 620x620 desktop size, safe-bar clearance, and working open/hide toggle."
+        "Quest board layout passed: exact 50% open geometry across 7 phone/desktop viewports, "
+        "enlarged typography, wrapped scrolling content, safe-bar clearance, and open/hide toggle."
     )
     return 0
 

@@ -30,7 +30,10 @@ assert(HudLayout.HEADING_TEXT_SIZE >= 17, "Activity panel headings are too small
 assert(HudLayout.BODY_TEXT_SIZE >= 15 and HudLayout.CONTROL_TEXT_SIZE >= 15, "Activity panel copy is too small")
 local referenceQuestMenu = QuestBoardLayout.open(1868, 1186)
 assert(referenceQuestMenu.X == 16 and referenceQuestMenu.Y == 82, "Quest menu is not fixed at the upper-left")
-assert(referenceQuestMenu.Width == 620 and referenceQuestMenu.Height == 620, "Quest menu did not keep its previous desktop size")
+assert(QuestBoardLayout.OPEN_SCALE_FROM_ORIGINAL == 0.5, "Quest menu scale is not exactly 50 percent")
+assert(referenceQuestMenu.Width == 310 and referenceQuestMenu.Height == 310, "Quest menu is not half its previous desktop size")
+assert(QuestBoardLayout.HEADER_TEXT_SIZE > 15, "Quest menu heading was not enlarged")
+assert(QuestBoardLayout.BODY_TEXT_SIZE > 14 and QuestBoardLayout.STEP_TEXT_SIZE > 15, "Quest menu copy was not enlarged")
 assert(QuestBoardLayout.insideScreen(1868, 1186, referenceQuestMenu), "Upper-left Quest menu leaves the reference viewport")
 local hiddenQuestMenu = QuestBoardLayout.closed(1868, 1186)
 assert(hiddenQuestMenu.X == referenceQuestMenu.X and hiddenQuestMenu.Y == referenceQuestMenu.Y, "Hiding Quest menu moves its header")
@@ -48,7 +51,7 @@ local questProbe = QuestBoard.new(questProbeParent, Theme, Components, Catalog, 
 	return string.format("%s\n%s", thai, english)
 end, function() end, function() end)
 assert(questProbe._panel.AnchorPoint == Vector2.new(0, 0), "Quest menu panel is not upper-left anchored")
-assert(questProbe._title.TextSize >= 15, "Quest menu heading is too small")
+assert(questProbe._title.TextSize == QuestBoardLayout.HEADER_TEXT_SIZE, "Quest menu heading is not using the enlarged size")
 assert(questProbe._body.ScrollBarThickness >= 7, "Quest menu scroll bar is too narrow")
 questProbe:SetOpen(true)
 assert(questProbe._body.Visible, "Quest menu body did not open")
@@ -93,7 +96,7 @@ remoteFolder.Name = "SmokeRemotes"
 remoteFolder.Parent = ReplicatedStorage
 
 local remotes = {}
-for _, name in ipairs({ "StateChanged", "Toast" }) do
+for _, name in ipairs({ "StateChanged", "Toast", "GuildAction" }) do
 	local event = Instance.new("RemoteEvent")
 	event.Name = name
 	event.Parent = remoteFolder
@@ -118,6 +121,17 @@ end)
 
 local world = workspace:FindFirstChild("CuteFamilyTown")
 assert(world, "Generated town is missing")
+local adventureGuild = world:FindFirstChild("AdventureGuild")
+assert(adventureGuild and adventureGuild:IsA("Model"), "Adventure Guild town centre is missing")
+assert(adventureGuild:GetAttribute("TownCenter") and adventureGuild:GetAttribute("Layout") == "BalancedThreeWay", "Adventure Guild is not the balanced town centre")
+assert(adventureGuild:FindFirstChild("GuildPillar") and adventureGuild:FindFirstChild("GuildNameBoard"), "Adventure Guild central pillar or name board is missing")
+local guildStations = 0
+for _, child in ipairs(adventureGuild:GetChildren()) do
+	if child.Name == "GuildStationBoard" then
+		guildStations += 1
+	end
+end
+assert(guildStations == 3, string.format("Adventure Guild has %d service stations instead of three", guildStations))
 local wildwoodTrees, carvedSigns, mossyStones, stringBulbs = 0, 0, 0, 0
 for _, descendant in ipairs(world:GetDescendants()) do
 	if descendant:GetAttribute("WildwoodTree") then
@@ -139,9 +153,161 @@ assert(mossyStones >= 40, string.format("Only %d mossy path stones were generate
 assert(stringBulbs >= 36, string.format("Only %d plaza string-light bulbs were generated", stringBulbs))
 assert(world:FindFirstChild("WildwoodAdventure"), "Wildwood adventure region is missing")
 assert(world.WildwoodAdventure:FindFirstChild("AdventureCamp"), "Shared adventure camp is missing")
+local sharedCampfire = world.WildwoodAdventure.AdventureCamp:FindFirstChild("Campfire")
+assert(sharedCampfire and sharedCampfire:IsA("Model"), "Shared campfire model is missing")
+assert(sharedCampfire:GetAttribute("CampfireStyle") == "CrossedLogsAndLayeredFlames", "Campfire is not using the realistic crossed-log style")
+assert(sharedCampfire:GetAttribute("CircularLayout") == false, "Campfire returned to a circular layout")
+local firewoodLogs = {}
+local endGrainCount = 0
+local heartwoodCount = 0
+local barkBandCount = 0
+local emberCount = 0
+local outerFlameCount = 0
+local innerFlameCount = 0
+local hasLivingFire = false
+local hasSmoke = false
+local hasFirelight = false
+for _, descendant in ipairs(sharedCampfire:GetDescendants()) do
+	if descendant.Name == "FirewoodLog" then
+		assert(descendant:IsA("Part") and descendant.Shape == Enum.PartType.Cylinder, "Firewood log is not cylindrical")
+		assert(descendant.Material == Enum.Material.Wood, "Firewood log does not use Wood material")
+		table.insert(firewoodLogs, descendant)
+	elseif descendant.Name == "FirewoodEndGrain" then
+		endGrainCount += 1
+	elseif descendant.Name == "FirewoodHeartwood" then
+		heartwoodCount += 1
+	elseif descendant.Name == "CharredBarkBand" then
+		barkBandCount += 1
+	elseif descendant.Name == "GlowingEmber" then
+		emberCount += 1
+	elseif descendant.Name == "OuterFlameTongue" then
+		assert(descendant:IsA("WedgePart") and descendant.Material == Enum.Material.Neon, "Outer flame is not a luminous tapered wedge")
+		outerFlameCount += 1
+	elseif descendant.Name == "InnerFlameTongue" then
+		assert(descendant:IsA("WedgePart") and descendant.Material == Enum.Material.Neon, "Inner flame is not a luminous tapered wedge")
+		innerFlameCount += 1
+	elseif descendant.Name == "LivingFlame" then
+		hasLivingFire = descendant:IsA("Fire") and descendant.TimeScale > 0
+	elseif descendant.Name == "FireSmoke" then
+		hasSmoke = descendant:IsA("Smoke") and descendant.Opacity > 0
+	elseif descendant.Name == "Firelight" then
+		hasFirelight = descendant:IsA("PointLight") and descendant.Shadows
+	end
+end
+assert(#firewoodLogs == 3, string.format("Campfire has %d logs instead of three", #firewoodLogs))
+assert(endGrainCount == 6 and heartwoodCount == 6 and barkBandCount == 6, "Firewood cut ends or charred bark details are incomplete")
+assert(emberCount == 4, "Campfire does not have four irregular ember chunks")
+assert(outerFlameCount == 4 and innerFlameCount == 2, "Campfire does not have six layered flame tongues")
+assert(hasLivingFire and hasSmoke and hasFirelight, "Campfire is missing animated fire, smoke or warm shadow-casting light")
+for first = 1, #firewoodLogs do
+	for second = first + 1, #firewoodLogs do
+		local alignment = math.abs(firewoodLogs[first].CFrame.XVector:Dot(firewoodLogs[second].CFrame.XVector))
+		assert(alignment < 0.95, "Campfire logs are parallel instead of visibly crossed")
+	end
+end
+for _, legacyName in ipairs({ "FireRing", "CampStone", "CampFlame" }) do
+	assert(not world:FindFirstChild(legacyName, true), string.format("Legacy circular campfire part remains: %s", legacyName))
+end
 assert(world.WildwoodAdventure:FindFirstChild("WildwoodForest"), "Wildwood Forest is missing")
 assert(world.WildwoodAdventure:FindFirstChild("SunriseMountain"), "Mountain is missing")
 assert(world.WildwoodAdventure:FindFirstChild("RiverAndLake"), "River and lake are missing")
+local riverModel = world.WildwoodAdventure.RiverAndLake
+local swimVolume = riverModel:FindFirstChild("AdventureRiver")
+assert(swimVolume and swimVolume:IsA("BasePart"), "Adventure river swimming volume is missing")
+assert(swimVolume:GetAttribute("SwimmableTerrainWater") == true, "Adventure river is not marked as Terrain water")
+assert(not swimVolume.CanCollide and swimVolume.Transparency == 1, "Invisible river swimming volume blocks the player")
+assert(CollectionService:HasTag(swimVolume, RemoteNames.SwimmableWaterTag), "River swimming volume is not tagged for local physics")
+local riverBedCount = 0
+local shallowBankCount = 0
+local midBankCount = 0
+local currentRibbonCount = 0
+local bridgePlankCount = 0
+local bridgeStepCount = 0
+for _, descendant in ipairs(riverModel:GetDescendants()) do
+	if descendant.Name == "RiverBed" then
+		riverBedCount += 1
+	elseif descendant.Name == "RiverShallowBank" then
+		shallowBankCount += 1
+	elseif descendant.Name == "RiverMidBank" then
+		midBankCount += 1
+	elseif descendant.Name == "RiverCurrentRibbon" then
+		currentRibbonCount += 1
+		assert(not descendant.CanCollide and CollectionService:HasTag(descendant, RemoteNames.RiverCurrentTag), "River current ribbon blocks players or is not animated")
+	elseif descendant.Name == "BridgePlank" then
+		bridgePlankCount += 1
+	elseif descendant.Name == "BridgeStep" then
+		bridgeStepCount += 1
+	end
+end
+assert(riverBedCount == 1, "Deep river bed is missing")
+assert(shallowBankCount == 4 and midBankCount == 4, "River does not have two safe entry tiers on every side")
+assert(currentRibbonCount == 7, "River does not have seven animated current streaks")
+assert(bridgePlankCount == 13 and bridgeStepCount == 2, "Bridge does not connect both sides of the widened water")
+local riverCenter = Config.Waypoints.RiverAdventure - Vector3.new(0, 4, 0)
+local sampleRegion = Region3.new(
+	riverCenter + Vector3.new(-2, -5, -2),
+	riverCenter + Vector3.new(2, -1, 2)
+):ExpandToGrid(4)
+local materials, occupancy = workspace.Terrain:ReadVoxels(sampleRegion, 4)
+local terrainWaterFound = false
+for x = 1, #materials do
+	for y = 1, #materials[x] do
+		for z = 1, #materials[x][y] do
+			if materials[x][y][z] == Enum.Material.Water and occupancy[x][y][z] > 0 then
+				terrainWaterFound = true
+			end
+		end
+	end
+end
+assert(terrainWaterFound, "Adventure river contains no physical Terrain Water to swim in")
+assert(workspace.Terrain.WaterColor == WildwoodStyle.World.ClearWater, "Adventure river is not clear blue")
+assert(workspace.Terrain.WaterTransparency >= 0.6, "Adventure river is too opaque to see a swimming character")
+assert(workspace.Terrain.WaterReflectance <= 0.08, "Adventure river reflections obscure swimmers")
+local sunnyLake = world:FindFirstChild("Lake")
+assert(sunnyLake and sunnyLake:IsA("BasePart"), "Sunny Lake swimming volume is missing")
+assert(sunnyLake:GetAttribute("WaterBodyId") == "SunnyLake", "Sunny Lake water identity is missing")
+assert(sunnyLake:GetAttribute("SwimmableTerrainWater") == true, "Sunny Lake is not swimmable Terrain water")
+assert(not sunnyLake.CanCollide and sunnyLake.Transparency == 1, "Sunny Lake still blocks or hides swimmers")
+assert(CollectionService:HasTag(sunnyLake, RemoteNames.SwimmableWaterTag), "Sunny Lake is not tracked by the swimming controller")
+local lakeGeometry = world:FindFirstChild("SunnyLakeGeometry")
+assert(lakeGeometry and lakeGeometry:GetAttribute("WaterStyle") == "ClearBlueMovingTerrain", "Sunny Lake geometry does not match the river style")
+local lakeBedCount = 0
+local lakeShallowCount = 0
+local lakeMidCount = 0
+local lakeRippleCount = 0
+for _, descendant in ipairs(lakeGeometry:GetDescendants()) do
+	if descendant.Name == "LakeBed" then
+		lakeBedCount += 1
+	elseif descendant.Name == "LakeShallowBank" then
+		lakeShallowCount += 1
+	elseif descendant.Name == "LakeMidBank" then
+		lakeMidCount += 1
+	elseif descendant.Name == "LakeSurfaceRipple" then
+		lakeRippleCount += 1
+		assert(not descendant.CanCollide, "Sunny Lake ripple blocks swimmers")
+		assert(CollectionService:HasTag(descendant, RemoteNames.RiverCurrentTag), "Sunny Lake ripple does not move")
+		assert(descendant.Color == WildwoodStyle.World.ClearWater or descendant.Color == WildwoodStyle.World.ClearWaterLight, "Sunny Lake ripple uses a mismatched blue")
+	end
+end
+assert(lakeBedCount == 1 and lakeShallowCount == 4 and lakeMidCount == 4, "Sunny Lake underwater geometry or safe banks are incomplete")
+assert(lakeRippleCount == 8, "Sunny Lake does not have eight animated ripples")
+local lakeCenter = Config.Waypoints.Lake - Vector3.new(0, 4, 0)
+local lakeSampleRegion = Region3.new(
+	lakeCenter + Vector3.new(-2, -5, -2),
+	lakeCenter + Vector3.new(2, -1, 2)
+):ExpandToGrid(4)
+local lakeMaterials, lakeOccupancy = workspace.Terrain:ReadVoxels(lakeSampleRegion, 4)
+local lakeTerrainWaterFound = false
+for x = 1, #lakeMaterials do
+	for y = 1, #lakeMaterials[x] do
+		for z = 1, #lakeMaterials[x][y] do
+			if lakeMaterials[x][y][z] == Enum.Material.Water and lakeOccupancy[x][y][z] > 0 then
+				lakeTerrainWaterFound = true
+			end
+		end
+	end
+end
+assert(lakeTerrainWaterFound, "Sunny Lake contains no physical Terrain Water")
 assert(world.WildwoodAdventure:FindFirstChild("MysteryCave"), "Mystery Cave is missing")
 
 -- Every visible world part comes from an approved source of truth: Bakery Bay
@@ -153,7 +319,7 @@ local bakeryBayRoles = {
 	"StoneDeep", "Stone", "StoneLight", "Cobble",
 	"Plaster", "CanvasLight", "Terracotta",
 	"FoliageDeep", "Foliage", "Grass", "FoliageLight", "Soil",
-	"Water", "WaterLight", "Window", "Lantern", "Glass", "Flower",
+	"Water", "WaterLight", "ClearWater", "ClearWaterLight", "Window", "Lantern", "Glass", "Flower",
 	"DaySky", "DayFog", "NightSky",
 }
 local function colorKey(color)
@@ -455,6 +621,8 @@ local mochiRightEar = scaledPet:FindFirstChild("CatEarRight")
 local mochiTailTop = scaledPet:FindFirstChild("CatTailStep4")
 local mochiNose = scaledPet:FindFirstChild("CatNose", true)
 local mochiMouth = scaledPet:FindFirstChild("CatMouth", true)
+local mochiLabelGui = scaledPet.PrimaryPart:FindFirstChild("WorldLabel")
+local mochiLabel = mochiLabelGui and mochiLabelGui:FindFirstChild("Text")
 assert(mochiHead and mochiHead.Color == Color3.fromRGB(17, 18, 20), "Mochi is not a black cat")
 assert(scaledPet.PrimaryPart.Shape == Enum.PartType.Block, "Mochi's body is not Voxel block geometry")
 assert(mochiHead.Shape == Enum.PartType.Block, "Mochi's head is not Voxel block geometry")
@@ -469,6 +637,10 @@ end
 assert(mochiNose and mochiNose.Text == "▼", "Mochi's nose is not a down-pointing triangle")
 assert(mochiNose.TextColor3 == Color3.fromRGB(244, 188, 198), "Mochi's nose is not pale pink")
 assert(mochiMouth and mochiMouth.Text == "ω", "Mochi does not have a cat-shaped mouth")
+assert(mochiLabel and mochiLabel.Text == "โมจิ / Mochi", "Mochi's bilingual world name is missing")
+assert(mochiLabel.BackgroundTransparency == 1, "Mochi's name still has a background")
+assert(mochiLabel.Font == Enum.Font.GothamMedium and mochiLabel.TextSize == 16, "Mochi's name typography is not readable")
+assert(mochiLabelGui:GetAttribute("AdaptiveContrast"), "Mochi's name does not adapt to its backdrop")
 for species, expectedPart in pairs({ Cat = "CatHead", Fox = "FoxTailTip", Dog = "CurledTail1", Owl = "OwlEyeDisc", Rabbit = "CottonTail" }) do
 	worldService:_buildCompanionGeometry(scaledPet, species, scaledPet:GetAttribute("PetScale"))
 	assert(scaledPet:FindFirstChild(expectedPart), string.format("%s silhouette is missing %s", species, expectedPart))
@@ -566,13 +738,24 @@ local navigationState = navigator:GetDebugState()
 assert(distanceToCafe > 10, "Navigation test did not start far enough from the cafe")
 assert(navigationState.GroundLineVisible and navigationState.TrailSegments >= 2, "Ground navigation line is missing")
 assert(navigationState.WaypointVisible and navigationState.NavigationLightEnabled, "Translucent waypoint light is hidden before arrival")
-assert(navigationState.WaypointTransparency >= 0.5 and navigationState.WaypointTransparency < 1, "Waypoint light is not semi-transparent")
+assert(navigationState.NavigationSoftness == 0.5, "Navigation light was not softened by exactly 50%")
+assert(math.abs(navigationState.NavigationLightBrightness - 0.375) < 0.001, "Navigation point light is not 50% brightness")
+assert(navigationState.WaypointTransparency >= 0.75 and navigationState.WaypointTransparency < 1, "Waypoint light is still too strong")
+assert(math.abs(navigationState.TrailWidth - 0.36) < 0.001, "Ground navigation line is not 50% narrower")
+assert(navigationState.TrailIsDashed and navigationState.TrailDashLength > 0 and navigationState.TrailGapLength > 0, "Ground navigation path is not dashed")
+assert(math.abs(navigationState.TrailTransparency - 0.715) < 0.001, "Ground navigation light opacity was not reduced by 50%")
+assert(navigationState.WaypointBackgroundTransparency == 1, "Quest destination name still has a background")
+assert(navigationState.WaypointTextSize == 16 and navigationState.WaypointAdaptive, "Quest destination typography is not readable/adaptive")
 assert((navigationState.Target - Config.Waypoints.Cafe).Magnitude < 0.01, "Quest waypoint points to the wrong place")
 navigator:UpdatePathFrom(Config.Waypoints.Cafe)
 local arrivedState = navigator:GetDebugState()
 assert(arrivedState.Arrived, "Navigator did not recognize arrival")
 assert(not arrivedState.GroundLineVisible and arrivedState.TrailSegments == 0, "Ground line stayed visible after arrival")
 assert(not arrivedState.WaypointVisible and not arrivedState.NavigationLightEnabled, "Waypoint light stayed visible after arrival")
+assert(navigator:Track("PaintHome", "Choose a colour", "เลือกสีบ้าน"), "Navigator refused the home quest")
+local homeNavigationState = navigator:GetDebugState()
+assert(string.find(homeNavigationState.WaypointText, "บ้านของคุณ", 1, true), "Your Home destination does not use บ้านของคุณ")
+assert(homeNavigationState.WaypointBackgroundTransparency == 1 and homeNavigationState.WaypointAdaptive, "Your Home text is not background-free/adaptive")
 navigator:Destroy()
 navigationGui:Destroy()
 

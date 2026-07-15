@@ -810,6 +810,7 @@ local CafeModels = require(Shared:WaitForChild("CafeModels"))
 local Config = require(Shared:WaitForChild("Config"))
 local HudLayout = require(Shared:WaitForChild("HudLayout"))
 local RemoteNames = require(Shared:WaitForChild("RemoteNames"))
+local AdaptiveWorldText = require(Shared:WaitForChild("AdaptiveWorldText"))
 
 local UI = script.Parent:WaitForChild("UI")
 local Components = require(UI:WaitForChild("Components"))
@@ -821,6 +822,7 @@ local Theme = require(UI:WaitForChild("Theme"))
 local Minimap = require(UI:WaitForChild("Minimap"))
 local QuestBoard = require(UI:WaitForChild("QuestBoard"))
 local QuestNavigator = require(UI:WaitForChild("QuestNavigator"))
+local RiverController = require(UI:WaitForChild("RiverController"))
 local FurnitureShop = require(UI:WaitForChild("FurnitureShop"))
 local HomePalette = require(UI:WaitForChild("HomePalette"))
 
@@ -828,6 +830,7 @@ local remoteFolder = ReplicatedStorage:WaitForChild(RemoteNames.Folder)
 local requestRemote = remoteFolder:WaitForChild(RemoteNames.Request)
 local stateChanged = remoteFolder:WaitForChild(RemoteNames.StateChanged)
 local toastRemote = remoteFolder:WaitForChild(RemoteNames.Toast)
+local guildActionRemote = remoteFolder:WaitForChild(RemoteNames.GuildAction)
 
 local state
 local currentMenu = "Home"
@@ -836,7 +839,9 @@ local navButtons = {}
 local questBoard
 local questNavigator
 local furnitureShop
+local guildMapAccess = false
 local environmentController = EnvironmentController.new()
+local riverController = RiverController.new(player)
 
 local function bilingual(english, thai)
 	return string.format("%s\n%s", thai, english)
@@ -1296,7 +1301,11 @@ local labelClock = 0
 local function trackLabel(labelGui)
 	local text = labelGui:FindFirstChild("Text")
 	if text then
-		trackedLabels[labelGui] = { Text = text, Stroke = text:FindFirstChildOfClass("UIStroke") }
+		trackedLabels[labelGui] = {
+			Text = text,
+			Stroke = text:FindFirstChildOfClass("UIStroke"),
+			Adaptive = labelGui:GetAttribute("AdaptiveContrast") == true,
+		}
 	end
 end
 
@@ -1331,8 +1340,15 @@ local function refreshLabels()
 				-- as the player backs away instead of blinking off.
 				local fade = math.clamp((distance - near) / math.max(far - near, 1), 0, 1)
 				labelGui.Enabled = true
+				if parts.Adaptive then
+					local labelPosition = adornee.Position + Vector3.new(0, adornee.Size.Y / 2 + 2, 0)
+					AdaptiveWorldText.update(parts.Text, camera, labelPosition, { adornee.Parent })
+					parts.Text.BackgroundTransparency = 1
+					parts.Text.TextStrokeTransparency = 0.08 + fade * 0.92
+				else
+					parts.Text.BackgroundTransparency = 0.08 + fade * 0.92
+				end
 				parts.Text.TextTransparency = fade
-				parts.Text.BackgroundTransparency = 0.08 + fade * 0.92
 				if parts.Stroke then
 					parts.Stroke.Transparency = fade
 				end
@@ -1459,6 +1475,20 @@ end
 local function addButton(text, color, action, payload)
 	local button = Components.button(body, text, color, function()
 		invoke(action, payload)
+	end)
+	button.LayoutOrder = nextOrder()
+	button.TextSize = HudLayout.CONTROL_TEXT_SIZE
+	return button
+end
+
+local function addGuildTravelButton(text, color, destination)
+	local button = Components.button(body, text, color, function()
+		invoke("Teleport", { destination = destination }, false, function(ok)
+			if ok then
+				guildMapAccess = false
+				panel.Visible = false
+			end
+		end)
 	end)
 	button.LayoutOrder = nextOrder()
 	button.TextSize = HudLayout.CONTROL_TEXT_SIZE
@@ -1771,7 +1801,10 @@ renderMenu = function(menu)
 		addButton(bilingual("Give a snack - 5 coins", "ให้ขนม - 5 เหรียญ"), Theme.Colors.Primary, "PetFeed", {})
 		addButton(bilingual("Play together", "เล่นด้วยกัน"), Theme.Colors.Slate, "PetPlay", {})
 		addButton(bilingual("Bubble bath", "อาบน้ำฟองสบู่"), Theme.Colors.Water, "PetBath", {})
-		addButton(bilingual("Visit the Pet Shop", "ไปร้านสัตว์เลี้ยง"), Theme.Colors.Water, "Teleport", { destination = "PetShop" })
+		addText(bilingual(
+			"Use the map station at Adventure Guild to travel to the Pet Shop.",
+			"ไปที่จุดแผนที่ของ Adventure Guild เพื่อเดินทางไปร้านสัตว์เลี้ยง"
+		), 48)
 	elseif menu == "Cafe" then
 		if not state.Cafe.Unlocked then
 			addHeading(bilingual("Open your family cafe", "เปิดคาเฟ่ครอบครัวของคุณ"))
@@ -1818,7 +1851,10 @@ renderMenu = function(menu)
 				)
 			end
 		end
-		addButton(bilingual("Go to the Cafe", "ไปคาเฟ่"), Theme.Colors.Sun, "Teleport", { destination = "Cafe" })
+		addText(bilingual(
+			"Use the map station at Adventure Guild to travel to the Cafe.",
+			"ไปที่จุดแผนที่ของ Adventure Guild เพื่อเดินทางไปคาเฟ่"
+		), 48)
 	elseif menu == "Adventure" then
 		local adventure = state.Adventure
 		local camp = Catalog.CampLevels[adventure.CampLevel]
@@ -1829,7 +1865,10 @@ renderMenu = function(menu)
 				string.format("กิจกรรมฤดูกาล: %s - %s", adventure.SeasonEvent.NameThai, adventure.SeasonEvent.DescriptionThai)
 			), 62)
 		end
-		addButton(bilingual("Go to Adventure Camp", "ไปแคมป์ผจญภัย"), Config.AdventurePalette.SunsetOrange, "Teleport", { destination = "AdventureCamp" })
+		addText(bilingual(
+			"Adventure travel begins at the map station in the town-centre Guild.",
+			"การเดินทางผจญภัยเริ่มที่จุดแผนที่ของกิลด์ตรงกลางเมือง"
+		), 48)
 
 		-- What the next camp wants, item by item, with what is already in the bag
 		-- beside it. This used to be a single line of text listing the cost and a
@@ -1876,11 +1915,9 @@ renderMenu = function(menu)
 			local discovered = adventure.Discoveries[zoneId]
 			local englishStatus = discovered and "Discovered" or "Explore"
 			local thaiStatus = discovered and "ค้นพบแล้ว" or "ออกสำรวจ"
-			addButton(
+			addText(
 				bilingual(string.format("%s: %s", englishStatus, zone.DisplayName), string.format("%s: %s", thaiStatus, zone.DisplayNameThai)),
-				zoneId == "RiverAdventure" and Config.AdventurePalette.RiverBlue or Config.AdventurePalette.ForestGreen,
-				"Teleport",
-				{ destination = zoneId }
+				44
 			)
 		end
 
@@ -1997,14 +2034,12 @@ renderMenu = function(menu)
 		for _, zoneId in ipairs(Catalog.AdventureZoneOrder) do
 			local zone = Catalog.AdventureZones[zoneId]
 			local resource = Catalog.AdventureResources[zone.Resource]
-			addButton(
+			addText(
 				bilingual(
 					string.format("%s  %s - find %s", resource.Icon, zone.DisplayName, resource.DisplayName),
 					string.format("%s  %s - หา%s", resource.Icon, zone.DisplayNameThai, resource.DisplayNameThai)
 				),
-				zoneId == "RiverAdventure" and Config.AdventurePalette.RiverBlue or Config.AdventurePalette.ForestGreen,
-				"Teleport",
-				{ destination = zoneId }
+				44
 			)
 		end
 	elseif menu == "Style" then
@@ -2035,12 +2070,20 @@ renderMenu = function(menu)
 		end)
 		avatarGrid.LayoutOrder = nextOrder()
 	elseif menu == "Map" then
-		addHeading(bilingual("Where shall we go?", "อยากไปที่ไหน?"))
-		addText(bilingual("Tap a place to travel there safely.", "แตะสถานที่เพื่อเดินทางอย่างปลอดภัย"))
-		addButton(bilingual("My Home", "บ้านของฉัน"), Theme.Colors.Primary, "Teleport", { destination = "Home" })
+		if not guildMapAccess then
+			addHeading(bilingual("Travel from Adventure Guild", "เดินทางจาก Adventure Guild"))
+			addText(bilingual(
+				"Walk to the central pillar in the middle of town and use 🗺️ OPEN MAP. All map warps begin there.",
+				"ไปที่เสากลางเมือง แล้วใช้จุด 🗺️ เปิดแผนที่ การวาร์ปทุกแห่งเริ่มจากตรงนั้น"
+			), 82)
+			return
+		end
+		addHeading(bilingual("Adventure Guild map", "แผนที่ Adventure Guild"))
+		addText(bilingual("Choose one destination. To travel again, return to the central pillar.", "เลือกหนึ่งจุดหมาย หากต้องการเดินทางอีกครั้งให้กลับมาที่เสากลาง"))
+		addGuildTravelButton(bilingual("My Home", "บ้านของฉัน"), Theme.Colors.Primary, "Home")
 		for _, destination in ipairs({ "Town", "Cafe", "PetShop", "FlowerShop", "Playground", "School", "Park", "Lake", "Beach", "Forest", "AdventureCamp", "WildwoodForest", "Mountain", "RiverAdventure", "MysteryCave" }) do
 			local english = destination:gsub("(%l)(%u)", "%1 %2")
-			addButton(bilingual(english, DESTINATION_THAI[destination]), Theme.Colors.Water, "Teleport", { destination = destination })
+			addGuildTravelButton(bilingual(english, DESTINATION_THAI[destination]), Theme.Colors.Water, destination)
 		end
 	end
 end
@@ -2077,6 +2120,9 @@ for index, name in ipairs({ "Home", "Garden", "Pet", "Cafe", "Adventure", "Bag",
 	indicator.Parent = button
 	Components.corner(indicator, UDim.new(1, 0))
 	button.Activated:Connect(function()
+		if name == "Map" then
+			guildMapAccess = false
+		end
 		panelOffset = nil
 		renderMenu(name)
 	end)
@@ -2123,7 +2169,7 @@ toastRemote.OnClientEvent:Connect(showToast)
 questNavigator = QuestNavigator.new(gui, Theme, Catalog, Config, bilingual)
 
 -- The quest board stays in the upper-left: a compact header while hidden and
--- the same large reading panel while open. Opening it dismisses the activity panel.
+-- a half-size scrolling window while open. Opening it dismisses the activity panel.
 questBoard = QuestBoard.new(gui, Theme, Components, Catalog, Config, bilingual, function(action, payload)
 	invoke(action, payload)
 end, function(kind)
@@ -2131,6 +2177,23 @@ end, function(kind)
 end, function(open)
 	if open then
 		panel.Visible = false
+	end
+end)
+
+-- The three physical stations around the central pillar are the only shortcuts
+-- into Guild services. Map access is deliberately granted only by its station;
+-- GameService independently checks the player's distance before every warp.
+guildActionRemote.OnClientEvent:Connect(function(action)
+	panelOffset = nil
+	if action == "Quest" then
+		panel.Visible = false
+		questBoard:SetOpen(true)
+	elseif action == "Map" then
+		guildMapAccess = true
+		renderMenu("Map")
+	elseif action == "Animals" then
+		guildMapAccess = false
+		renderMenu("Pet")
 	end
 end)
 if state then
@@ -2821,8 +2884,8 @@ return Minimap
 						<ProtectedString name="Source"><![CDATA[--[[
 	Quest board.
 
-	Stays at the upper-left in both states: a compact header while hidden and the
-	same large reading size while open. It never jumps into the screen centre. It
+	Stays at the upper-left in both states: a compact header while hidden and a
+	half-size scrolling window while open. It never jumps into the screen centre. It
 	shows the daily quest, then the chain the player is
 	working through: every step in order, which one is live, and what each pays.
 
@@ -2882,8 +2945,9 @@ function QuestBoard.new(parent, theme, components, catalog, config, bilingual, o
 
 	local questIcon = Iconography.create(header, "Quest", theme.Colors.Primary, 32)
 	questIcon.Position = UDim2.fromOffset(14, 13)
+	self._questIcon = questIcon
 
-	local title = components.label(header, bilingual("QUESTS", "ภารกิจ"), UDim2.new(1, -160, 1, 0), UDim2.fromOffset(54, 0), 15, true)
+	local title = components.label(header, bilingual("QUESTS", "ภารกิจ"), UDim2.new(1, -160, 1, 0), UDim2.fromOffset(54, 0), QuestBoardLayout.HEADER_TEXT_SIZE, true)
 	title.TextColor3 = theme.Colors.Ink
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	self._title = title
@@ -2897,7 +2961,7 @@ function QuestBoard.new(parent, theme, components, catalog, config, bilingual, o
 	toggle.Font = Enum.Font.GothamBold
 	toggle.Text = bilingual("OPEN", "เปิด")
 	toggle.TextColor3 = theme.Colors.Ink
-	toggle.TextSize = 13
+	toggle.TextSize = QuestBoardLayout.TOGGLE_TEXT_SIZE
 	toggle.Parent = header
 	components.corner(toggle, theme.SmallCorner)
 	components.stroke(toggle, theme.Colors.Border, 1)
@@ -2910,10 +2974,10 @@ function QuestBoard.new(parent, theme, components, catalog, config, bilingual, o
 	body.BackgroundTransparency = 1
 	body.BorderSizePixel = 0
 	body.CanvasSize = UDim2.fromOffset(0, 0)
-	body.Position = UDim2.fromOffset(12, CLOSED_HEIGHT)
+	body.Position = UDim2.fromOffset(QuestBoardLayout.BODY_PADDING, CLOSED_HEIGHT)
 	body.ScrollBarImageColor3 = theme.Colors.Water
 	body.ScrollBarThickness = 7
-	body.Size = UDim2.new(1, -24, 1, -CLOSED_HEIGHT - 12)
+	body.Size = UDim2.new(1, -QuestBoardLayout.BODY_PADDING * 2, 1, -CLOSED_HEIGHT - QuestBoardLayout.BODY_PADDING)
 	body.Visible = false
 	body.Parent = panel
 	self._body = body
@@ -2937,6 +3001,28 @@ function QuestBoard:_layout(animate)
 	end
 	local geometry = self._open and QuestBoardLayout.open(screen.X, screen.Y)
 		or QuestBoardLayout.closed(screen.X, screen.Y)
+	local headerHeight = self._open and QuestBoardLayout.OPEN_HEADER_HEIGHT or CLOSED_HEIGHT
+	local compactHeader = self._open and geometry.Width < 260
+	self._header.Size = UDim2.new(1, 0, 0, headerHeight)
+	self._body.Position = UDim2.fromOffset(QuestBoardLayout.BODY_PADDING, headerHeight)
+	self._body.Size = UDim2.new(
+		1,
+		-QuestBoardLayout.BODY_PADDING * 2,
+		1,
+		-headerHeight - QuestBoardLayout.BODY_PADDING
+	)
+	self._questIcon.Visible = not compactHeader
+	if compactHeader then
+		self._title.Position = UDim2.fromOffset(8, 0)
+		self._title.Size = UDim2.new(1, -72, 1, 0)
+		self._toggle.Position = UDim2.new(1, -6, 0.5, 0)
+		self._toggle.Size = UDim2.fromOffset(56, 34)
+	else
+		self._title.Position = UDim2.fromOffset(54, 0)
+		self._title.Size = UDim2.new(1, -160, 1, 0)
+		self._toggle.Position = UDim2.new(1, -12, 0.5, 0)
+		self._toggle.Size = UDim2.fromOffset(92, 42)
+	end
 	local properties = {
 		Position = UDim2.fromOffset(geometry.X, geometry.Y),
 		Size = UDim2.fromOffset(geometry.Width, geometry.Height),
@@ -2990,7 +3076,7 @@ function QuestBoard:_text(parent, text, size, bold, color)
 	label.Size = UDim2.new(1, 0, 0, 0)
 	label.Text = text
 	label.TextColor3 = color or self._theme.Colors.Ink
-	label.TextSize = size or 14
+	label.TextSize = size or QuestBoardLayout.BODY_TEXT_SIZE
 	label.TextWrapped = true
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = parent
@@ -3026,7 +3112,7 @@ function QuestBoard:_navigateButton(parent, kind)
 	button.Size = UDim2.new(1, 0, 0, 50)
 	button.Text = self._bilingual("SHOW GROUND PATH", "แสดงเส้นทางบนพื้น")
 	button.TextColor3 = self._theme.textOn(button.BackgroundColor3)
-	button.TextSize = 13
+	button.TextSize = QuestBoardLayout.BUTTON_TEXT_SIZE
 	button.TextWrapped = true
 	button.Parent = parent
 	self._components.corner(button, self._theme.SmallCorner)
@@ -3063,7 +3149,7 @@ function QuestBoard:_requirementRow(parent, item, order)
 	tile.Size = UDim2.fromOffset(34, 34)
 	tile.Text = item.Icon
 	tile.TextColor3 = theme.textOn(item.Color)
-	tile.TextSize = 20
+	tile.TextSize = 22
 	tile.Parent = row
 	self._components.corner(tile, UDim.new(0, 8))
 
@@ -3074,7 +3160,7 @@ function QuestBoard:_requirementRow(parent, item, order)
 	name.Size = UDim2.new(1, -126, 1, 0)
 	name.Text = self._bilingual(item.Name, item.NameThai)
 	name.TextColor3 = theme.Colors.Ink
-	name.TextSize = 12
+	name.TextSize = QuestBoardLayout.SMALL_TEXT_SIZE
 	name.TextXAlignment = Enum.TextXAlignment.Left
 	name.Parent = row
 
@@ -3090,7 +3176,7 @@ function QuestBoard:_requirementRow(parent, item, order)
 		and string.format("%d / %d  ✓", item.Have, item.Need)
 		or string.format("%d / %d", item.Have, item.Need)
 	count.TextColor3 = item.Met and theme.Colors.Primary or theme.Colors.Ink
-	count.TextSize = 13
+	count.TextSize = QuestBoardLayout.BUTTON_TEXT_SIZE
 	count.TextXAlignment = Enum.TextXAlignment.Right
 	count.Parent = row
 
@@ -3118,7 +3204,7 @@ function QuestBoard:_campRequirements(card, state, order)
 	self:_text(card, self._bilingual(
 		string.format("Bring these to build the %s:", plan.Name),
 		string.format("เก็บของเหล่านี้เพื่อสร้าง%s:", plan.NameThai)
-	), 13, true, theme.Colors.Muted).LayoutOrder = order
+	), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted).LayoutOrder = order
 
 	local list = Instance.new("Frame")
 	list.AutomaticSize = Enum.AutomaticSize.Y
@@ -3142,7 +3228,7 @@ function QuestBoard:_campRequirements(card, state, order)
 			self:_text(card, self._bilingual(
 				string.format("Find %s in the %s.", item.Name, item.FoundIn),
 				string.format("หา%sได้ที่%s", item.NameThai, item.FoundInThai)
-			), 12, false, theme.Colors.Muted).LayoutOrder = order + 2
+			), QuestBoardLayout.SMALL_TEXT_SIZE, false, theme.Colors.Muted).LayoutOrder = order + 2
 			break
 		end
 	end
@@ -3151,7 +3237,7 @@ function QuestBoard:_campRequirements(card, state, order)
 		self:_text(card, self._bilingual(
 			"You have everything! Open Adventure and build it.",
 			"คุณมีของครบแล้ว! เปิดเมนูผจญภัยแล้วสร้างได้เลย"
-		), 13, true, theme.Colors.Primary).LayoutOrder = order + 3
+		), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Primary).LayoutOrder = order + 3
 	end
 end
 
@@ -3181,7 +3267,7 @@ function QuestBoard:Update(state)
 		self:_text(chest, self._bilingual(
 			string.format("A %d coin chest is waiting!", quests.PendingBonus),
 			string.format("หีบรางวัล %d เหรียญรออยู่!", quests.PendingBonus)
-		), 16, true)
+		), QuestBoardLayout.PROMINENT_TEXT_SIZE, true)
 
 		local claim = Instance.new("TextButton")
 		claim.AutoButtonColor = false
@@ -3190,7 +3276,7 @@ function QuestBoard:Update(state)
 		claim.Size = UDim2.new(1, 0, 0, theme.TouchHeight)
 		claim.Text = self._bilingual("OPEN THE CHEST", "เปิดหีบรางวัล")
 		claim.TextColor3 = theme.textOn(theme.Colors.Leaf)
-		claim.TextSize = 16
+		claim.TextSize = QuestBoardLayout.PROMINENT_TEXT_SIZE
 		claim.Parent = chest
 		self._components.corner(claim, theme.SmallCorner)
 		claim.Activated:Connect(function()
@@ -3202,12 +3288,12 @@ function QuestBoard:Update(state)
 	local daily = state.Daily and state.Daily.Quest
 	if daily then
 		local card = self:_card()
-		self:_text(card, self._bilingual("TODAY", "วันนี้"), 13, true, theme.Colors.Muted)
-		self:_text(card, self._bilingual(daily.Description, daily.DescriptionThai or daily.Description), 16, true)
+		self:_text(card, self._bilingual("TODAY", "วันนี้"), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted)
+		self:_text(card, self._bilingual(daily.Description, daily.DescriptionThai or daily.Description), QuestBoardLayout.PROMINENT_TEXT_SIZE, true)
 		self:_bar(card, (daily.Progress or 0) / math.max(daily.Target or 1, 1), theme.Colors.Water)
 		self:_text(card, daily.Completed
 			and self._bilingual("Done!", "สำเร็จแล้ว!")
-			or string.format("%d / %d", daily.Progress or 0, daily.Target or 1), 13, false, theme.Colors.Muted)
+			or string.format("%d / %d", daily.Progress or 0, daily.Target or 1), QuestBoardLayout.SECTION_TEXT_SIZE, false, theme.Colors.Muted)
 		if not daily.Completed then
 			self:_navigateButton(card, "Daily")
 		end
@@ -3216,11 +3302,11 @@ function QuestBoard:Update(state)
 	local chain = self._catalog.QuestChains[quests.ChainIndex]
 	if not chain then
 		local done = self:_card(theme.Colors.Leaf)
-		self:_text(done, self._bilingual("The Wildwood story is complete!", "เรื่องราวแห่งไวลด์วูดสำเร็จแล้ว!"), 16, true, theme.Colors.White)
+		self:_text(done, self._bilingual("The Wildwood story is complete!", "เรื่องราวแห่งไวลด์วูดสำเร็จแล้ว!"), QuestBoardLayout.PROMINENT_TEXT_SIZE, true, theme.Colors.White)
 		self:_text(done, self._bilingual(
 			string.format("You earned %d coins from quests.", quests.TotalEarned or 0),
 			string.format("คุณได้รับ %d เหรียญจากภารกิจ", quests.TotalEarned or 0)
-		), 14, false, theme.Colors.White)
+		), QuestBoardLayout.BODY_TEXT_SIZE, false, theme.Colors.White)
 		return
 	end
 
@@ -3228,9 +3314,9 @@ function QuestBoard:Update(state)
 	self:_text(card, self._bilingual(
 		string.format("CHAPTER %d OF %d", quests.ChainIndex, #self._catalog.QuestChains),
 		string.format("บทที่ %d จาก %d", quests.ChainIndex, #self._catalog.QuestChains)
-	), 13, true, theme.Colors.Muted)
-	self:_text(card, self._bilingual(chain.Name, chain.NameThai), 18, true, theme.Colors.PrimaryDark)
-	self:_text(card, self._bilingual(chain.Blurb, chain.BlurbThai), 14, false, theme.Colors.Muted)
+	), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted)
+	self:_text(card, self._bilingual(chain.Name, chain.NameThai), QuestBoardLayout.TITLE_TEXT_SIZE, true, theme.Colors.PrimaryDark)
+	self:_text(card, self._bilingual(chain.Blurb, chain.BlurbThai), QuestBoardLayout.BODY_TEXT_SIZE, false, theme.Colors.Muted)
 
 	-- Every step, so the player can see what is coming and what it pays.
 	for index, step in ipairs(chain.Steps) do
@@ -3257,20 +3343,20 @@ function QuestBoard:Update(state)
 
 		local mark = done and "[x]" or (active and "[>]" or "[ ]")
 		local tone = done and theme.Colors.Leaf or (active and theme.Colors.Ink or theme.Colors.Muted)
-		self:_text(row, string.format("%s  %s", mark, self._bilingual(step.Description, step.DescriptionThai)), 15, active, tone)
+		self:_text(row, string.format("%s  %s", mark, self._bilingual(step.Description, step.DescriptionThai)), QuestBoardLayout.STEP_TEXT_SIZE, active, tone)
 		self:_text(row, self._bilingual(
 			string.format("Reward %d coins", step.Reward),
 			string.format("รางวัล %d เหรียญ", step.Reward)
-		), 13, false, theme.Colors.Muted)
+		), QuestBoardLayout.SECTION_TEXT_SIZE, false, theme.Colors.Muted)
 
 		if active then
 			self:_bar(row, (quests.Progress or 0) / math.max(step.Target, 1), theme.Colors.Leaf)
-			self:_text(row, string.format("%d / %d", quests.Progress or 0, step.Target), 13, true, theme.Colors.Muted)
+			self:_text(row, string.format("%d / %d", quests.Progress or 0, step.Target), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted)
 			if step.Hint then
 				self:_text(row, self._bilingual(
 					string.format("TIP: %s", step.Hint),
 					string.format("คำใบ้: %s", step.HintThai or step.Hint)
-				), 13, false, theme.Colors.PrimaryDark)
+				), QuestBoardLayout.SECTION_TEXT_SIZE, false, theme.Colors.PrimaryDark)
 			end
 			self:_navigateButton(row, "Chain")
 			-- "Upgrade your camp" is the one step whose work happens somewhere else
@@ -3286,11 +3372,11 @@ function QuestBoard:Update(state)
 	self:_text(prize, self._bilingual(
 		string.format("Finish the chapter: %d coin chest", chain.Bonus),
 		string.format("จบบท: หีบรางวัล %d เหรียญ", chain.Bonus)
-	), 15, true, theme.Colors.PrimaryDark)
+	), QuestBoardLayout.STEP_TEXT_SIZE, true, theme.Colors.PrimaryDark)
 	self:_text(prize, self._bilingual(
 		string.format("Earned from quests so far: %d coins", quests.TotalEarned or 0),
 		string.format("ได้รับจากภารกิจแล้ว: %d เหรียญ", quests.TotalEarned or 0)
-	), 13, false, theme.Colors.Muted)
+	), QuestBoardLayout.SECTION_TEXT_SIZE, false, theme.Colors.Muted)
 
 	self:_shop(state)
 end
@@ -3319,7 +3405,7 @@ function QuestBoard:_shop(state)
 	end
 
 	local card = self:_card(theme.Colors.White)
-	self:_text(card, self._bilingual("COIN SHOP", "ร้านค้าเหรียญ"), 13, true, theme.Colors.Muted)
+	self:_text(card, self._bilingual("COIN SHOP", "ร้านค้าเหรียญ"), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted)
 
 	for index, pack in ipairs(packs) do
 		local button = Instance.new("TextButton")
@@ -3333,7 +3419,7 @@ function QuestBoard:_shop(state)
 			string.format("%s  +%d เหรียญ  -  R$%d", pack.NameThai, pack.Coins, pack.Robux)
 		)
 		button.TextColor3 = theme.Colors.Ink
-		button.TextSize = 13
+		button.TextSize = QuestBoardLayout.BUTTON_TEXT_SIZE
 		button.TextWrapped = true
 		button.Parent = card
 		self._components.corner(button, theme.SmallCorner)
@@ -3360,7 +3446,7 @@ function QuestBoard:_shop(state)
 				string.format("%s  -  R$%d", monetization.SupporterNameThai, monetization.SupporterRobux)
 			)
 		pass.TextColor3 = theme.textOn(pass.BackgroundColor3)
-		pass.TextSize = 13
+		pass.TextSize = QuestBoardLayout.BUTTON_TEXT_SIZE
 		pass.TextWrapped = true
 		pass.Parent = card
 		self._components.corner(pass, theme.SmallCorner)
@@ -3374,7 +3460,7 @@ function QuestBoard:_shop(state)
 	self:_text(card, self._bilingual(
 		"Coins buy furniture and seeds. Quests are always earned, never bought.",
 		"เหรียญใช้ซื้อเฟอร์นิเจอร์และเมล็ดพันธุ์ ภารกิจต้องทำเองเสมอ"
-	), 12, false, theme.Colors.Muted)
+	), QuestBoardLayout.SMALL_TEXT_SIZE, false, theme.Colors.Muted)
 end
 
 return QuestBoard
@@ -4332,6 +4418,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local QuestGuide = require(Shared:WaitForChild("QuestGuide"))
+local AdaptiveWorldText = require(Shared:WaitForChild("AdaptiveWorldText"))
 
 local QuestNavigator = {}
 QuestNavigator.__index = QuestNavigator
@@ -4339,7 +4426,15 @@ QuestNavigator.__index = QuestNavigator
 local TARGET_REFRESH_SECONDS = 0.35
 local ARRIVAL_DISTANCE = 10
 local RESUME_DISTANCE = 16
-local TRAIL_SEGMENT_LENGTH = 9
+local NAVIGATION_SOFTNESS = 0.5
+local TRAIL_BASE_WIDTH = 0.72
+local TRAIL_WIDTH = TRAIL_BASE_WIDTH * NAVIGATION_SOFTNESS
+local TRAIL_DASH_LENGTH = 3.2
+local TRAIL_GAP_LENGTH = 2.8
+local TRAIL_PERIOD = TRAIL_DASH_LENGTH + TRAIL_GAP_LENGTH
+local TRAIL_OPACITY = 0.57 * NAVIGATION_SOFTNESS
+local COLUMN_OPACITY = 0.38 * NAVIGATION_SOFTNESS
+local RING_OPACITY = 0.48 * NAVIGATION_SOFTNESS
 local MAX_TRAIL_SEGMENTS = 80
 
 local function label(parent, name, text, size, position, font, textSize)
@@ -4373,6 +4468,11 @@ function QuestNavigator.new(parent, theme, catalog, config, bilingual)
 	self._trailParts = {}
 	self._trailSegments = 0
 	self._trailVisible = false
+	-- Blend the original gold halfway toward the neutral surface colour and
+	-- halve every glow opacity/brightness. The route remains recognizable but
+	-- no longer competes with the world around it.
+	local navigationColor = theme.Colors.Sun:Lerp(theme.Colors.Surface, NAVIGATION_SOFTNESS)
+	self._navigationColor = navigationColor
 
 	local markerFolder = Instance.new("Folder")
 	markerFolder.Name = "LocalQuestWaypoint"
@@ -4401,9 +4501,9 @@ function QuestNavigator.new(parent, theme, catalog, config, bilingual)
 	column.CanCollide = false
 	column.CanQuery = false
 	column.CanTouch = false
-	column.Color = theme.Colors.Sun
+	column.Color = navigationColor
 	column.Material = Enum.Material.Neon
-	column.Size = Vector3.new(0.35, 12, 0.35)
+	column.Size = Vector3.new(0.35 * NAVIGATION_SOFTNESS, 12, 0.35 * NAVIGATION_SOFTNESS)
 	column.Transparency = 1
 	column.Parent = markerFolder
 	self._column = column
@@ -4414,18 +4514,18 @@ function QuestNavigator.new(parent, theme, catalog, config, bilingual)
 	ring.CanCollide = false
 	ring.CanQuery = false
 	ring.CanTouch = false
-	ring.Color = theme.Colors.Sun
+	ring.Color = navigationColor
 	ring.Material = Enum.Material.Neon
 	ring.Shape = Enum.PartType.Cylinder
-	ring.Size = Vector3.new(0.18, 7, 7)
+	ring.Size = Vector3.new(0.18 * NAVIGATION_SOFTNESS, 7, 7)
 	ring.Transparency = 1
 	ring.Parent = markerFolder
 	self._ring = ring
 
 	local navigationLight = Instance.new("PointLight")
 	navigationLight.Name = "NavigationLight"
-	navigationLight.Brightness = 0.75
-	navigationLight.Color = theme.Colors.Sun
+	navigationLight.Brightness = 0.75 * NAVIGATION_SOFTNESS
+	navigationLight.Color = navigationColor
 	navigationLight.Enabled = false
 	navigationLight.Range = 18
 	navigationLight.Shadows = false
@@ -4438,30 +4538,39 @@ function QuestNavigator.new(parent, theme, catalog, config, bilingual)
 	billboard.AlwaysOnTop = true
 	billboard.LightInfluence = 0
 	billboard.MaxDistance = 2200
-	billboard.Size = UDim2.fromOffset(210, 70)
+	billboard.Size = UDim2.fromOffset(190, 52)
 	billboard.StudsOffset = Vector3.new(0, 8.5, 0)
 	billboard.Enabled = false
+	billboard:SetAttribute("AdaptiveContrast", true)
 	billboard.Parent = marker
 	self._billboard = billboard
 
-	local markerText = label(billboard, "Text", "", UDim2.fromScale(1, 1), nil, Enum.Font.GothamBold, 15)
-	markerText.BackgroundColor3 = theme.Colors.PrimaryDark
-	markerText.BackgroundTransparency = 0.34
-	markerText.TextColor3 = theme.Colors.Sun
-	local markerCorner = Instance.new("UICorner")
-	markerCorner.CornerRadius = UDim.new(0, 12)
-	markerCorner.Parent = markerText
-	local markerStroke = Instance.new("UIStroke")
-	markerStroke.Color = Color3.fromRGB(255, 255, 255)
-	markerStroke.Thickness = 2
-	markerStroke.Transparency = 0.35
-	markerStroke.Parent = markerText
+	local markerText = label(billboard, "Text", "", UDim2.fromScale(1, 1), nil, theme.Fonts.Body, 16)
+	markerText.BackgroundTransparency = 1
+	AdaptiveWorldText.apply(markerText, AdaptiveWorldText.defaultBackdrop())
 	self._markerText = markerText
 
 	self._connection = RunService.RenderStepped:Connect(function(deltaTime)
 		self:_render(deltaTime)
 	end)
 	return self
+end
+
+function QuestNavigator:_refreshLabelContrast()
+	if not self._billboard.Enabled or not self._target then
+		return
+	end
+	local exclusions = { self._markerFolder }
+	local character = self._player and self._player.Character
+	if character then
+		table.insert(exclusions, character)
+	end
+	AdaptiveWorldText.update(
+		self._markerText,
+		workspace.CurrentCamera,
+		self._target + Vector3.new(0, 9.5, 0),
+		exclusions
+	)
 end
 
 function QuestNavigator:_ownedHome()
@@ -4522,8 +4631,8 @@ function QuestNavigator:_setNavigationVisible(visible)
 	self._billboard.Enabled = visible
 	-- The destination glow is intentionally subtle: it remains readable at
 	-- night without becoming an opaque wall during the day.
-	self._column.Transparency = visible and 0.62 or 1
-	self._ring.Transparency = visible and 0.52 or 1
+	self._column.Transparency = visible and 1 - COLUMN_OPACITY or 1
+	self._ring.Transparency = visible and 1 - RING_OPACITY or 1
 	self._navigationLight.Enabled = visible
 	if not visible then
 		self:_hideTrail()
@@ -4542,7 +4651,7 @@ function QuestNavigator:_trailPart(index)
 	trailPart.CanQuery = false
 	trailPart.CanTouch = false
 	trailPart.CastShadow = false
-	trailPart.Color = self._theme.Colors.Sun
+	trailPart.Color = self._navigationColor
 	trailPart.Material = Enum.Material.Neon
 	trailPart.Transparency = 1
 	trailPart.Parent = self._trailFolder
@@ -4572,7 +4681,9 @@ function QuestNavigator:_drawGroundTrail(startPosition)
 		return
 	end
 
-	local segmentCount = math.clamp(math.ceil(distance / TRAIL_SEGMENT_LENGTH), 2, MAX_TRAIL_SEGMENTS)
+	local dashCount = math.clamp(math.ceil(distance / TRAIL_PERIOD), 2, MAX_TRAIL_SEGMENTS)
+	local actualPeriod = distance / dashCount
+	local dashLength = math.min(TRAIL_DASH_LENGTH, actualPeriod * 0.58)
 	local exclusions = { self._markerFolder }
 	local character = self._player and self._player.Character
 	if character then
@@ -4593,25 +4704,29 @@ function QuestNavigator:_drawGroundTrail(startPosition)
 	raycastParams.FilterDescendantsInstances = exclusions
 	raycastParams.IgnoreWater = true
 
-	local points = {}
-	for index = 0, segmentCount do
-		local sample = startPosition:Lerp(self._target, index / segmentCount)
-		points[index + 1] = self:_groundPoint(sample, raycastParams)
-	end
-	for index = 1, segmentCount do
-		local from = points[index]
-		local to = points[index + 1]
+	local direction = difference.Unit
+	local rendered = 0
+	for index = 1, dashCount do
+		-- Each part covers only the dash, never the following gap. Raycasting both
+		-- ends separately keeps every short dash resting on uneven ground.
+		local fromDistance = (index - 1) * actualPeriod
+		local toDistance = math.min(fromDistance + dashLength, distance)
+		local from = self:_groundPoint(startPosition + direction * fromDistance, raycastParams)
+		local to = self:_groundPoint(startPosition + direction * toDistance, raycastParams)
 		local length = (to - from).Magnitude
-		local trailPart = self:_trailPart(index)
-		trailPart.Size = Vector3.new(0.72, 0.08, length + 0.18)
-		trailPart.CFrame = CFrame.lookAt((from + to) / 2, to)
-		trailPart.Transparency = 0.43
+		if length > 0.05 then
+			rendered += 1
+			local trailPart = self:_trailPart(rendered)
+			trailPart.Size = Vector3.new(TRAIL_WIDTH, 0.06, length)
+			trailPart.CFrame = CFrame.lookAt((from + to) / 2, to)
+			trailPart.Transparency = 1 - TRAIL_OPACITY
+		end
 	end
-	for index = segmentCount + 1, #self._trailParts do
+	for index = rendered + 1, #self._trailParts do
 		self._trailParts[index].Transparency = 1
 	end
-	self._trailSegments = segmentCount
-	self._trailVisible = true
+	self._trailSegments = rendered
+	self._trailVisible = rendered > 0
 end
 
 function QuestNavigator:_setTarget(position)
@@ -4630,6 +4745,7 @@ function QuestNavigator:_setTarget(position)
 	self._marker.CFrame = CFrame.new(position + Vector3.new(0, 1, 0))
 	self._column.CFrame = CFrame.new(position + Vector3.new(0, 6, 0))
 	self._ring.CFrame = CFrame.new(position + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	self:_refreshLabelContrast()
 end
 
 function QuestNavigator:Track(action, description, descriptionThai)
@@ -4714,6 +4830,7 @@ function QuestNavigator:UpdatePathFrom(playerPosition)
 	local visible = self._action ~= nil and not self._arrived
 	self:_setNavigationVisible(visible)
 	if visible then
+		self:_refreshLabelContrast()
 		self:_drawGroundTrail(playerPosition - Vector3.new(0, 3, 0))
 	end
 	return distance
@@ -4729,6 +4846,18 @@ function QuestNavigator:GetDebugState()
 		WaypointVisible = self._billboard.Enabled,
 		NavigationLightEnabled = self._navigationLight.Enabled,
 		WaypointTransparency = self._column.Transparency,
+		WaypointBackgroundTransparency = self._markerText.BackgroundTransparency,
+		WaypointTextSize = self._markerText.TextSize,
+		WaypointAdaptive = self._markerText:GetAttribute("AdaptiveWorldText") == true,
+		WaypointText = self._markerText.Text,
+		NavigationSoftness = NAVIGATION_SOFTNESS,
+		NavigationLightBrightness = self._navigationLight.Brightness,
+		NavigationColor = self._navigationColor,
+		TrailWidth = TRAIL_WIDTH,
+		TrailDashLength = TRAIL_DASH_LENGTH,
+		TrailGapLength = TRAIL_GAP_LENGTH,
+		TrailTransparency = 1 - TRAIL_OPACITY,
+		TrailIsDashed = TRAIL_GAP_LENGTH > 0,
 	}
 end
 
@@ -5207,40 +5336,11 @@ local HudLayout = require(Shared:WaitForChild("HudLayout"))
 
 local AvatarGrid = {}
 
-local function hex(color)
-	return string.format(
-		"#%02X%02X%02X",
-		math.floor(color.R * 255 + 0.5),
-		math.floor(color.G * 255 + 0.5),
-		math.floor(color.B * 255 + 0.5)
-	)
-end
-
-local function addPaletteStrip(card, palette, components)
-	local strip = Instance.new("Frame")
-	strip.Name = "RealColorSwatches"
-	strip.BackgroundTransparency = 1
-	strip.Position = UDim2.fromOffset(6, HudLayout.AVATAR_PREVIEW_HEIGHT - 11)
-	strip.Size = UDim2.fromOffset(66, 17)
-	strip.ZIndex = 4
-	strip.Parent = card
-	for index, color in ipairs({ palette.Primary, palette.Secondary, palette.Accent }) do
-		local swatch = Instance.new("Frame")
-		swatch.Name = "Swatch" .. index
-		swatch.BackgroundColor3 = color
-		swatch.Position = UDim2.fromOffset((index - 1) * 21, 0)
-		swatch.Size = UDim2.fromOffset(19, 17)
-		swatch.ZIndex = 5
-		swatch.Parent = strip
-		components.corner(swatch, UDim.new(0, 4))
-		components.stroke(swatch, Color3.fromRGB(255, 255, 255), 1, 0.15)
-	end
-end
-
 local function addPreview(card, avatarId, outfit)
 	local preview = Instance.new("ViewportFrame")
 	preview.Name = avatarId .. "3DPreview"
-	preview.BackgroundColor3 = outfit.Palette.Light:Lerp(outfit.Palette.Secondary, 0.76)
+	-- The approved sheet uses one warm neutral studio, not six tinted cards.
+	preview.BackgroundColor3 = Color3.fromRGB(238, 235, 231)
 	preview.BorderSizePixel = 0
 	preview.ClipsDescendants = true
 	preview.Size = UDim2.new(1, 0, 0, HudLayout.AVATAR_PREVIEW_HEIGHT)
@@ -5251,7 +5351,7 @@ local function addPreview(card, avatarId, outfit)
 
 	local camera = Instance.new("Camera")
 	camera.Name = "AvatarPreviewCamera"
-	camera.FieldOfView = 30
+	camera.FieldOfView = 28
 	camera.CFrame = AvatarModels.PreviewCameraCFrame
 	camera.Parent = preview
 	preview.CurrentCamera = camera
@@ -5265,11 +5365,12 @@ local function addPreview(card, avatarId, outfit)
 	ground.Name = "PreviewGround"
 	ground.Anchored = true
 	ground.CanCollide = false
-	ground.Color = outfit.Palette.Deep
+	ground.Color = Color3.fromRGB(83, 78, 72)
 	ground.Material = Enum.Material.SmoothPlastic
-	ground.Size = Vector3.new(4.2, 0.08, 3.1)
-	ground.CFrame = CFrame.new(0, -0.42, 0)
-	ground.Transparency = 0.35
+	ground.Shape = Enum.PartType.Cylinder
+	ground.Size = Vector3.new(0.08, 3.5, 3.5)
+	ground.CFrame = CFrame.new(0, -0.42, 0) * CFrame.Angles(0, 0, math.rad(90))
+	ground.Transparency = 0.72
 	ground.Parent = world
 	return preview
 end
@@ -5291,11 +5392,10 @@ local function addCard(row, index, avatarId, equippedId, theme, components, bili
 	components.stroke(card, selected and outfit.Palette.Accent or theme.Colors.Border, selected and 4 or 2, 0)
 
 	addPreview(card, avatarId, outfit)
-	addPaletteStrip(card, outfit.Palette, components)
 
 	local label = components.label(
 		card,
-		bilingual(outfit.DisplayName .. "  " .. hex(outfit.Palette.Primary), outfit.DisplayNameThai),
+		bilingual(outfit.DisplayName, outfit.DisplayNameThai),
 		UDim2.new(1, -10, 0, HudLayout.AVATAR_CARD_HEIGHT - HudLayout.AVATAR_PREVIEW_HEIGHT - 5),
 		UDim2.fromOffset(5, HudLayout.AVATAR_PREVIEW_HEIGHT + 3),
 		11,
@@ -5393,6 +5493,160 @@ function AvatarGrid.create(parent, equippedId, theme, components, bilingual, onS
 end
 
 return table.freeze(AvatarGrid)
+]]></ProtectedString>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="47">
+          <Properties>
+            <string name="Name">RiverController</string>
+            <ProtectedString name="Source"><![CDATA[local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RemoteNames = require(Shared:WaitForChild("RemoteNames"))
+
+local RiverController = {}
+RiverController.__index = RiverController
+
+local function insideVolume(volume, worldPosition)
+	local localPosition = volume.CFrame:PointToObjectSpace(worldPosition)
+	local half = volume.Size / 2
+	return math.abs(localPosition.X) <= half.X
+		and math.abs(localPosition.Y) <= half.Y + 2
+		and math.abs(localPosition.Z) <= half.Z
+end
+
+local function flowDirection(volume)
+	local direction = Vector3.new(
+		volume:GetAttribute("FlowX") or 0,
+		0,
+		volume:GetAttribute("FlowZ") or 0
+	)
+	return direction.Magnitude > 0 and direction.Unit or Vector3.new(0, 0, 1)
+end
+
+function RiverController.new(player)
+	local self = setmetatable({}, RiverController)
+	self._player = player or Players.LocalPlayer
+	self._time = 0
+	self._ribbons = {}
+	self._volumes = {}
+	self._connections = {}
+
+	for _, ribbon in ipairs(CollectionService:GetTagged(RemoteNames.RiverCurrentTag)) do
+		self:_trackRibbon(ribbon)
+	end
+	for _, volume in ipairs(CollectionService:GetTagged(RemoteNames.SwimmableWaterTag)) do
+		self._volumes[volume] = true
+	end
+
+	table.insert(self._connections, CollectionService:GetInstanceAddedSignal(RemoteNames.RiverCurrentTag):Connect(function(ribbon)
+		self:_trackRibbon(ribbon)
+	end))
+	table.insert(self._connections, CollectionService:GetInstanceRemovedSignal(RemoteNames.RiverCurrentTag):Connect(function(ribbon)
+		self._ribbons[ribbon] = nil
+	end))
+	table.insert(self._connections, CollectionService:GetInstanceAddedSignal(RemoteNames.SwimmableWaterTag):Connect(function(volume)
+		self._volumes[volume] = true
+	end))
+	table.insert(self._connections, CollectionService:GetInstanceRemovedSignal(RemoteNames.SwimmableWaterTag):Connect(function(volume)
+		self._volumes[volume] = nil
+	end))
+	table.insert(self._connections, RunService.RenderStepped:Connect(function(deltaTime)
+		self:Step(deltaTime)
+	end))
+
+	return self
+end
+
+function RiverController:_trackRibbon(ribbon)
+	if not ribbon:IsA("BasePart") then
+		return
+	end
+	self._ribbons[ribbon] = {
+		CFrame = ribbon.CFrame,
+		Transparency = ribbon.Transparency,
+	}
+end
+
+function RiverController:_animateSurface(deltaTime)
+	self._time += deltaTime
+	for ribbon, base in pairs(self._ribbons) do
+		if not ribbon.Parent then
+			self._ribbons[ribbon] = nil
+		else
+			local span = ribbon:GetAttribute("FlowSpan") or 72
+			local speed = ribbon:GetAttribute("FlowSpeed") or 5
+			local phase = ribbon:GetAttribute("FlowPhase") or 0
+			local drift = ribbon:GetAttribute("LateralDrift") or 0.3
+			local cycle = self._time * speed + phase * span
+			local downstream = cycle % span - span / 2
+			local ripple = self._time * 1.7 + phase * math.pi * 2
+			ribbon.CFrame = base.CFrame * CFrame.new(
+				math.sin(ripple * 0.73) * drift,
+				math.sin(ripple) * 0.045,
+				downstream
+			)
+			ribbon.Transparency = math.clamp(base.Transparency + math.sin(ripple) * 0.07, 0.56, 0.88)
+		end
+	end
+end
+
+function RiverController:_applySwimmingCurrent(deltaTime)
+	local character = self._player and self._player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root or humanoid:GetState() ~= Enum.HumanoidStateType.Swimming then
+		return
+	end
+
+	for volume in pairs(self._volumes) do
+		if volume.Parent and insideVolume(volume, root.Position) then
+			local direction = flowDirection(volume)
+			local targetSpeed = volume:GetAttribute("FlowSpeed") or 5.5
+			local acceleration = volume:GetAttribute("FlowAcceleration") or 2.4
+			if targetSpeed <= 0 or acceleration <= 0 then
+				-- Lakes animate visually but have no directional current; normal
+				-- Humanoid swimming remains completely player-controlled.
+				return
+			end
+			local velocity = root.AssemblyLinearVelocity
+			local downstreamSpeed = velocity:Dot(direction)
+			if downstreamSpeed < targetSpeed then
+				local addition = math.min(targetSpeed - downstreamSpeed, acceleration * deltaTime)
+				-- Only the downstream component changes. Vertical buoyancy and the
+				-- player's sideways/upstream input remain under Humanoid control.
+				root.AssemblyLinearVelocity = velocity + direction * addition
+			end
+			return
+		end
+	end
+end
+
+function RiverController:Step(deltaTime)
+	deltaTime = math.min(math.max(deltaTime or 0, 0), 0.1)
+	self:_animateSurface(deltaTime)
+	self:_applySwimmingCurrent(deltaTime)
+end
+
+function RiverController:Destroy()
+	for _, connection in ipairs(self._connections) do
+		connection:Disconnect()
+	end
+	table.clear(self._connections)
+	for ribbon, base in pairs(self._ribbons) do
+		if ribbon.Parent then
+			ribbon.CFrame = base.CFrame
+			ribbon.Transparency = base.Transparency
+		end
+	end
+	table.clear(self._ribbons)
+	table.clear(self._volumes)
+end
+
+return RiverController
 ]]></ProtectedString>
           </Properties>
         </Item>
@@ -5715,7 +5969,8 @@ local WORLD = WildwoodStyle.World
 local PETS = WildwoodStyle.Pets
 local AVATARS = WildwoodStyle.Avatars
 local Catalog = {}
-local SKIN = Color3.fromRGB(255, 224, 189)
+-- Median lit face tone sampled from the approved six-character render.
+local SKIN = Color3.fromRGB(238, 183, 123)
 
 Catalog.Seeds = {
 	Daisy = { DisplayName = "Daisy", DisplayNameThai = "เดซี่", GrowSeconds = 20, SellPrice = 30, Color = WORLD.Flower },
@@ -6051,6 +6306,10 @@ local Config = {
 	CharacterReferenceHeight = 5,
 	PetHeightRatio = 0.25,
 	RequestCooldown = 0.12,
+	-- Map travel is a physical town service: players must stand at the central
+	-- Adventure Guild before the server accepts a destination request.
+	AdventureGuildCenter = Vector3.new(0, 4, 0),
+	AdventureGuildTravelRadius = 24,
 	AdventureCollectCooldown = 8,
 	AdventurePuzzleReward = 150,
 	-- World labels are readable up close and fade out as you walk away, so the
@@ -6134,7 +6393,7 @@ Config.AdventurePalette = {
 	WarmBeige = WildwoodStyle.World.Plaster,
 	SunsetOrange = WildwoodStyle.World.Terracotta,
 	SoftYellow = WildwoodStyle.World.Window,
-	RiverBlue = WildwoodStyle.World.Water,
+	RiverBlue = WildwoodStyle.World.ClearWater,
 }
 
 -- Direct-select cottage swatches resampled from approved Bakery Bay concept A.
@@ -6149,7 +6408,7 @@ Config.HomeColors = {
 Config.DefaultHomeColor = "Coffee"
 
 Config.Waypoints = {
-	-- Guild Square anchors an organic village loop. Market Lane sits to the
+	-- Adventure Guild anchors an organic village loop. Market Lane sits to the
 	-- west, Family Lane to the east, and the park/lake form the quiet north end.
 	Town = Vector3.new(0, 4, 28),
 	Cafe = Vector3.new(-78, 4, -62),
@@ -6189,6 +6448,9 @@ return table.freeze(Config)
 	Request = "Request",
 	StateChanged = "StateChanged",
 	Toast = "Toast",
+	-- A central Guild prompt only asks the local UI to open; all travel remains
+	-- server-authoritative through Request/Teleport.
+	GuildAction = "GuildAction",
 	-- CollectionService tag on every floating world label, so the client can
 	-- fade them by distance and switch them off without hunting the workspace.
 	LabelTag = "FamilyTownLabel",
@@ -6198,6 +6460,11 @@ return table.freeze(Config)
 	-- Tagged lamp globes are switched on only when the local player's computer
 	-- time is outside the 06:00-18:00 daylight window.
 	LampTag = "FamilyTownNightLamp",
+	-- Terrain supplies real swimming and buoyancy; these tags let the local
+	-- river controller animate surface streaks and add a gentle downstream push
+	-- without scanning the whole generated world every frame.
+	RiverCurrentTag = "FamilyTownRiverCurrent",
+	SwimmableWaterTag = "FamilyTownSwimmableWater",
 })
 ]]></ProtectedString>
 					<string name="ScriptGuid">{FBDD0131-DF8E-49DE-A951-6972BDB42E62}</string>
@@ -7311,8 +7578,8 @@ HudLayout.SCROLLBAR_THICKNESS = 8
 -- female models in the second. Group headers keep the separation explicit.
 HudLayout.AVATAR_GRID_COLUMNS = 3
 HudLayout.AVATAR_GRID_GAP = 12
-HudLayout.AVATAR_CARD_HEIGHT = 220
-HudLayout.AVATAR_PREVIEW_HEIGHT = 154
+HudLayout.AVATAR_CARD_HEIGHT = 238
+HudLayout.AVATAR_PREVIEW_HEIGHT = 176
 HudLayout.AVATAR_GENDER_HEADER_HEIGHT = 40
 HudLayout.AVATAR_GENDER_GAP = 14
 HudLayout.AVATAR_GENDER_GROUP_HEIGHT = HudLayout.AVATAR_GENDER_HEADER_HEIGHT + HudLayout.AVATAR_CARD_HEIGHT
@@ -8035,10 +8302,27 @@ QuestBoardLayout.TOP_SAFE = 82
 QuestBoardLayout.BOTTOM_SAFE = 108
 QuestBoardLayout.CLOSED_WIDTH = 220
 QuestBoardLayout.CLOSED_HEIGHT = 58
-QuestBoardLayout.MAX_WIDTH = 620
-QuestBoardLayout.MAX_HEIGHT = 620
-QuestBoardLayout.WIDTH_SCALE = 0.76
-QuestBoardLayout.HEIGHT_SCALE = 0.82
+QuestBoardLayout.OPEN_SCALE_FROM_ORIGINAL = 0.5
+QuestBoardLayout.ORIGINAL_MAX_WIDTH = 620
+QuestBoardLayout.ORIGINAL_MAX_HEIGHT = 620
+QuestBoardLayout.ORIGINAL_WIDTH_SCALE = 0.76
+QuestBoardLayout.ORIGINAL_HEIGHT_SCALE = 0.82
+QuestBoardLayout.ORIGINAL_MIN_WIDTH = 300
+QuestBoardLayout.ORIGINAL_MIN_HEIGHT = 180
+QuestBoardLayout.OPEN_HEADER_HEIGHT = 42
+QuestBoardLayout.BODY_PADDING = 8
+
+-- Larger typography remains explicit and testable even though the window is
+-- half-size. Content scrolls vertically instead of shrinking these values.
+QuestBoardLayout.HEADER_TEXT_SIZE = 18
+QuestBoardLayout.TOGGLE_TEXT_SIZE = 15
+QuestBoardLayout.SECTION_TEXT_SIZE = 15
+QuestBoardLayout.BODY_TEXT_SIZE = 16
+QuestBoardLayout.PROMINENT_TEXT_SIZE = 18
+QuestBoardLayout.TITLE_TEXT_SIZE = 20
+QuestBoardLayout.STEP_TEXT_SIZE = 17
+QuestBoardLayout.BUTTON_TEXT_SIZE = 15
+QuestBoardLayout.SMALL_TEXT_SIZE = 14
 
 local function clamp(value, low, high)
 	if value < low then
@@ -8052,21 +8336,21 @@ end
 function QuestBoardLayout.open(screenW, screenH)
 	local availableW = math.max(1, screenW - QuestBoardLayout.MARGIN * 2)
 	local availableH = math.max(1, screenH - QuestBoardLayout.TOP_SAFE - QuestBoardLayout.BOTTOM_SAFE)
-	local width = math.min(
-		QuestBoardLayout.MAX_WIDTH,
+	local originalWidth = math.min(
+		QuestBoardLayout.ORIGINAL_MAX_WIDTH,
 		availableW,
-		math.max(300, math.floor(screenW * QuestBoardLayout.WIDTH_SCALE))
+		math.max(QuestBoardLayout.ORIGINAL_MIN_WIDTH, math.floor(screenW * QuestBoardLayout.ORIGINAL_WIDTH_SCALE))
 	)
-	local height = math.min(
-		QuestBoardLayout.MAX_HEIGHT,
+	local originalHeight = math.min(
+		QuestBoardLayout.ORIGINAL_MAX_HEIGHT,
 		availableH,
-		math.max(180, math.floor(screenH * QuestBoardLayout.HEIGHT_SCALE))
+		math.max(QuestBoardLayout.ORIGINAL_MIN_HEIGHT, math.floor(screenH * QuestBoardLayout.ORIGINAL_HEIGHT_SCALE))
 	)
 	return {
 		X = QuestBoardLayout.MARGIN,
 		Y = QuestBoardLayout.TOP_SAFE,
-		Width = math.floor(width),
-		Height = math.floor(height),
+		Width = math.floor(originalWidth * QuestBoardLayout.OPEN_SCALE_FROM_ORIGINAL),
+		Height = math.floor(originalHeight * QuestBoardLayout.OPEN_SCALE_FROM_ORIGINAL),
 	}
 end
 
@@ -8171,6 +8455,11 @@ WildwoodStyle.World = {
 	Soil = Color3.fromRGB(54, 39, 25), -- #362719
 	Water = Color3.fromRGB(79, 103, 96), -- #4F6760
 	WaterLight = Color3.fromRGB(130, 150, 138), -- #82968A
+	-- User-approved clear river pair. Kept separate from the muted architectural
+	-- water roles so changing the river does not recolour windows, flowers, UI,
+	-- café food or the River Warden outfit.
+	ClearWater = Color3.fromRGB(68, 169, 226), -- #44A9E2
+	ClearWaterLight = Color3.fromRGB(188, 235, 250), -- #BCEBFA
 	Window = Color3.fromRGB(217, 162, 90), -- #D9A25A
 	Lantern = Color3.fromRGB(240, 184, 90), -- #F0B85A
 	Glass = Color3.fromRGB(215, 187, 149), -- #D7BB95
@@ -8354,7 +8643,7 @@ local AvatarModels = {}
 AvatarModels.OriginalId = "Original"
 AvatarModels.VisualName = "ApprovedWoodlandAvatar"
 AvatarModels.LegacyVisualNames = { "WildwoodAvatarVisual", "WildwoodExplorerKit" }
-AvatarModels.PreviewCameraCFrame = CFrame.lookAt(Vector3.new(5.8, 3.9, -8.8), Vector3.new(0, 2.25, 0))
+AvatarModels.PreviewCameraCFrame = CFrame.lookAt(Vector3.new(3.2, 3.8, -10.3), Vector3.new(0, 2.25, 0))
 AvatarModels.PreviewFocus = Vector3.new(0, 2.25, 0)
 
 local ORIGINAL_TRANSPARENCY = "ApprovedAvatarOriginalTransparency"
@@ -8477,13 +8766,66 @@ local function orb(visual, name, target, diameter, offset, color, material)
 	return piece(visual, name, target, Vector3.new(diameter, diameter, diameter), offset, color, material, "Part", Enum.PartType.Ball)
 end
 
+-- Small authored geometry replaces unavailable uploaded clothing textures.
+-- These details remain actual 3D parts in both the live avatar and ViewportFrame.
+local function fernMotif(visual, prefix, target, x, y, z, color, scale)
+	scale = scale or 1
+	block(visual, prefix .. "Stem", target, Vector3.new(0.045, 0.58, 0.035) * scale, CFrame.new(x, y, z), color, Enum.Material.Fabric)
+	for index = 1, 3 do
+		local leafY = y - 0.2 * scale + index * 0.14 * scale
+		local width = (0.19 - index * 0.018) * scale
+		block(visual, prefix .. "LeftLeaf" .. index, target, Vector3.new(width, 0.055 * scale, 0.035), CFrame.new(x - 0.09 * scale, leafY, z - 0.006) * CFrame.Angles(0, 0, math.rad(-28)), color, Enum.Material.Fabric)
+		block(visual, prefix .. "RightLeaf" .. index, target, Vector3.new(width, 0.055 * scale, 0.035), CFrame.new(x + 0.09 * scale, leafY + 0.035 * scale, z - 0.006) * CFrame.Angles(0, 0, math.rad(28)), color, Enum.Material.Fabric)
+	end
+end
+
+local function addBootLaces(visual, character, palette)
+	for _, side in ipairs({ "Left", "Right" }) do
+		local leg = findFirst(character, { side .. " Leg", side .. "UpperLeg" })
+		if leg then
+			for index = 1, 3 do
+				block(visual, side .. "BootLace" .. index, leg, Vector3.new(0.7, 0.055, 0.045), CFrame.new(0, -0.48 - index * 0.12, -0.75), palette.Accent, Enum.Material.Fabric)
+			end
+			block(visual, side .. "BootSole", leg, Vector3.new(1.1, 0.12, 1.32), CFrame.new(0, -1.0, -0.1), palette.Deep, Enum.Material.Fabric)
+		end
+	end
+end
+
+local function addCargoPockets(visual, character, palette)
+	for _, side in ipairs({ "Left", "Right" }) do
+		local leg = findFirst(character, { side .. " Leg", side .. "UpperLeg" })
+		if leg then
+			block(visual, side .. "CargoPocket", leg, Vector3.new(0.7, 0.46, 0.1), CFrame.new(0, 0.42, -0.56), palette.Leather, Enum.Material.Fabric)
+			block(visual, side .. "CargoPocketFlap", leg, Vector3.new(0.72, 0.12, 0.12), CFrame.new(0, 0.61, -0.62), palette.Secondary, Enum.Material.Fabric)
+		end
+	end
+end
+
+local function addSleeveTrim(visual, character, palette)
+	for _, side in ipairs({ "Left", "Right" }) do
+		local arm = findFirst(character, { side .. " Arm", side .. "UpperArm" })
+		if arm then
+			block(visual, side .. "SleeveCuff", arm, Vector3.new(1.08, 0.18, 1.08), CFrame.new(0, -0.3, 0), palette.Leather, Enum.Material.Fabric)
+			block(visual, side .. "SleeveStitch", arm, Vector3.new(1.1, 0.05, 0.05), CFrame.new(0, -0.18, -0.55), palette.Accent, Enum.Material.Fabric)
+		end
+	end
+end
+
+local function addJacketTailTrim(visual, prefix, torso, color)
+	for _, side in ipairs({ -1, 1 }) do
+		block(visual, prefix .. (side < 0 and "Left" or "Right"), torso, Vector3.new(0.78, 0.065, 0.04), CFrame.new(side * 0.47, -1.11, -0.68) * CFrame.Angles(0, 0, math.rad(side * 7)), color, Enum.Material.Fabric)
+	end
+end
+
 local function addFace(visual, head, skin, palette)
 	block(visual, "BlockHead", head, Vector3.new(2.04, 1.48, 1.5), CFrame.new(0, 0.22, 0), skin)
 	for index, x in ipairs({ -0.38, 0.38 }) do
 		block(visual, "FaceEye" .. index, head, Vector3.new(0.16, 0.25, 0.055), CFrame.new(x, 0.28, -0.775), Color3.fromRGB(37, 31, 26))
 		block(visual, "FaceEyeGlint" .. index, head, Vector3.new(0.045, 0.055, 0.025), CFrame.new(x - 0.025, 0.34, -0.81), Color3.fromRGB(255, 255, 255), Enum.Material.Neon)
 	end
-	block(visual, "FriendlySmile", head, Vector3.new(0.34, 0.065, 0.045), CFrame.new(0, -0.08, -0.785), Color3.fromRGB(112, 64, 55))
+	block(visual, "FriendlySmile", head, Vector3.new(0.22, 0.06, 0.045), CFrame.new(0, -0.1, -0.785), Color3.fromRGB(112, 64, 55))
+	block(visual, "LeftSmileCurve", head, Vector3.new(0.2, 0.055, 0.045), CFrame.new(-0.18, -0.06, -0.785) * CFrame.Angles(0, 0, math.rad(-18)), Color3.fromRGB(112, 64, 55))
+	block(visual, "RightSmileCurve", head, Vector3.new(0.2, 0.055, 0.045), CFrame.new(0.18, -0.06, -0.785) * CFrame.Angles(0, 0, math.rad(18)), Color3.fromRGB(112, 64, 55))
 	block(visual, "LeftBrow", head, Vector3.new(0.34, 0.055, 0.04), CFrame.new(-0.38, 0.51, -0.785) * CFrame.Angles(0, 0, math.rad(-7)), palette.Hair)
 	block(visual, "RightBrow", head, Vector3.new(0.34, 0.055, 0.04), CFrame.new(0.38, 0.51, -0.785) * CFrame.Angles(0, 0, math.rad(7)), palette.Hair)
 end
@@ -8491,17 +8833,26 @@ end
 local function addMaleHair(visual, head, palette, style)
 	block(visual, "HairTop", head, Vector3.new(2.08, 0.48, 1.53), CFrame.new(0, 0.83, 0.03), palette.Hair, Enum.Material.Fabric)
 	block(visual, "HairBack", head, Vector3.new(2.04, 0.72, 0.34), CFrame.new(0, 0.46, 0.71), palette.Hair, Enum.Material.Fabric)
-	local sweep = style == "MaleRiverWarden" and -1 or 1
-	for index, x in ipairs({ -0.82, -0.42, 0, 0.42, 0.82 }) do
-		wedge(
-			visual,
-			"HairSpike" .. index,
-			head,
-			Vector3.new(0.48, 0.62, 0.46),
-			CFrame.new(x, 0.9 + math.abs(x) * 0.08, -0.28) * CFrame.Angles(0, math.rad(180), math.rad(sweep * (x * 15))),
-			palette.Hair,
-			Enum.Material.Fabric
-		)
+	if style == "MaleRiverWarden" then
+		-- Low, glossy side sweep from the approved middle character.
+		for index, entry in ipairs({
+			{ -0.72, 0.76, -18, 0.72 },
+			{ -0.3, 0.84, -12, 0.8 },
+			{ 0.15, 0.9, 8, 0.72 },
+			{ 0.56, 0.84, 18, 0.62 },
+		}) do
+			wedge(visual, "SideSweptFringe" .. index, head, Vector3.new(0.52, entry[4], 0.5), CFrame.new(entry[1], entry[2], -0.43) * CFrame.Angles(0, math.rad(180), math.rad(entry[3])), palette.Hair, Enum.Material.Fabric)
+		end
+		block(visual, "RiverSideSweep", head, Vector3.new(1.18, 0.25, 0.34), CFrame.new(-0.3, 0.62, -0.66) * CFrame.Angles(0, 0, math.rad(-12)), palette.Hair, Enum.Material.Fabric)
+	else
+		local archer = style == "MaleAutumnArcher"
+		for index, x in ipairs({ -0.88, -0.56, -0.22, 0.14, 0.5, 0.84 }) do
+			local tilt = (x < 0 and -1 or 1) * (archer and 20 or 14)
+			wedge(visual, "HairSpike" .. index, head, Vector3.new(0.46, archer and 0.7 or 0.6, 0.46), CFrame.new(x, 0.92 + math.abs(x) * 0.1, -0.3) * CFrame.Angles(0, math.rad(180), math.rad(tilt)), palette.Hair, Enum.Material.Fabric)
+		end
+		if archer then
+			wedge(visual, "AutumnCrownSpike", head, Vector3.new(0.52, 0.82, 0.48), CFrame.new(0.12, 1.14, 0.05) * CFrame.Angles(0, math.rad(180), math.rad(10)), palette.Hair, Enum.Material.Fabric)
+		end
 	end
 	block(visual, "LeftSideburn", head, Vector3.new(0.28, 0.55, 0.34), CFrame.new(-0.9, 0.38, -0.48), palette.Hair, Enum.Material.Fabric)
 	block(visual, "RightSideburn", head, Vector3.new(0.28, 0.55, 0.34), CFrame.new(0.9, 0.38, -0.48), palette.Hair, Enum.Material.Fabric)
@@ -8509,22 +8860,27 @@ end
 
 local function addFemaleHair(visual, head, torso, palette, style)
 	block(visual, "HairTop", head, Vector3.new(2.1, 0.48, 1.54), CFrame.new(0, 0.83, 0.03), palette.Hair, Enum.Material.Fabric)
-	block(visual, "LongHairBack", head, Vector3.new(1.96, 1.75, 0.34), CFrame.new(0, -0.18, 0.72), palette.Hair, Enum.Material.Fabric)
-	block(visual, "LeftHairLock", head, Vector3.new(0.34, 1.4, 0.34), CFrame.new(-0.88, -0.06, -0.49) * CFrame.Angles(0, 0, math.rad(-7)), palette.Hair, Enum.Material.Fabric)
-	block(visual, "RightHairLock", head, Vector3.new(0.34, 1.4, 0.34), CFrame.new(0.88, -0.06, -0.49) * CFrame.Angles(0, 0, math.rad(7)), palette.Hair, Enum.Material.Fabric)
-
-	if style == "FemaleFernGuardian" or style == "FemalePineScout" then
-		local side = style == "FemaleFernGuardian" and -0.76 or 0.76
-		for index = 1, 4 do
-			block(
-				visual,
-				"HairBraid" .. index,
-				torso,
-				Vector3.new(0.3, 0.46, 0.3),
-				CFrame.new(side, 0.65 - index * 0.38, -0.66) * CFrame.Angles(0, 0, math.rad((index % 2 == 0 and 1 or -1) * 8)),
-				palette.Hair,
-				Enum.Material.Fabric
-			)
+	if style == "FemaleWildflowerBotanist" then
+		block(visual, "LongWavyHairBack", head, Vector3.new(1.96, 1.82, 0.34), CFrame.new(0, -0.2, 0.72), palette.Hair, Enum.Material.Fabric)
+		for index, side in ipairs({ -1, 1 }) do
+			for segment = 1, 3 do
+				orb(visual, (side < 0 and "Left" or "Right") .. "WavyLock" .. segment, head, 0.42, CFrame.new(side * (0.82 + segment * 0.03), 0.45 - segment * 0.42, -0.48), palette.Hair, Enum.Material.Fabric)
+			end
+		end
+	elseif style == "FemaleFernGuardian" then
+		block(visual, "GuardianHairBack", head, Vector3.new(1.75, 0.75, 0.34), CFrame.new(0, 0.34, 0.72), palette.Hair, Enum.Material.Fabric)
+		orb(visual, "GuardianHairBunBase", head, 0.78, CFrame.new(0, 1.15, 0.28), palette.Hair, Enum.Material.Fabric)
+		orb(visual, "GuardianHairBunTop", head, 0.62, CFrame.new(0.1, 1.48, 0.24), palette.Hair, Enum.Material.Fabric)
+		for _, side in ipairs({ -1, 1 }) do
+			for segment = 1, 4 do
+				block(visual, (side < 0 and "Left" or "Right") .. "GuardianBraid" .. segment, torso, Vector3.new(0.28, 0.42, 0.28), CFrame.new(side * 0.72, 0.82 - segment * 0.34, -0.66) * CFrame.Angles(0, 0, math.rad(side * (segment % 2 == 0 and 8 or -8))), palette.Hair, Enum.Material.Fabric)
+			end
+		end
+	else
+		block(visual, "ScoutHairBack", head, Vector3.new(1.75, 1.2, 0.3), CFrame.new(0, 0.02, 0.7), palette.Hair, Enum.Material.Fabric)
+		block(visual, "ScoutSideFringe", head, Vector3.new(0.82, 0.24, 0.34), CFrame.new(-0.28, 0.58, -0.68) * CFrame.Angles(0, 0, math.rad(-12)), palette.Hair, Enum.Material.Fabric)
+		for segment = 1, 5 do
+			block(visual, "ScoutBraid" .. segment, torso, Vector3.new(0.3, 0.42, 0.3), CFrame.new(0.74, 0.8 - segment * 0.34, -0.66) * CFrame.Angles(0, 0, math.rad(segment % 2 == 0 and 8 or -8)), palette.Hair, Enum.Material.Fabric)
 		end
 	end
 end
@@ -8549,37 +8905,52 @@ end
 
 local function addR15Body(visual, character, palette, skin)
 	local upper = character:FindFirstChild("UpperTorso")
-	local lower = character:FindFirstChild("LowerTorso")
+	local styleAnchor
+	-- Render a single classic R6-shaped shell over an R15 animation skeleton.
+	-- This prevents a player's R15 scale from changing the approved silhouettes.
 	if upper then
-		block(visual, "BlockUpperTorso", upper, Vector3.new(upper.Size.X * 1.06, upper.Size.Y * 1.04, upper.Size.Z * 1.08), CFrame.new(), palette.Primary, Enum.Material.Fabric)
-	end
-	if lower then
-		block(visual, "BlockLowerTorso", lower, Vector3.new(lower.Size.X * 1.06, lower.Size.Y * 1.04, lower.Size.Z * 1.08), CFrame.new(), palette.Secondary, Enum.Material.Fabric)
+		block(visual, "BlockTorso", upper, Vector3.new(2.08, 2.05, 1.08), CFrame.new(0, -0.3, 0), palette.Primary, Enum.Material.Fabric)
+		styleAnchor = block(visual, "StyleTorsoAnchor", upper, Vector3.new(0.1, 0.1, 0.1), CFrame.new(0, -0.3, 0), palette.Primary)
+		styleAnchor.Transparency = 1
+		styleAnchor.CastShadow = false
 	end
 	for _, side in ipairs({ "Left", "Right" }) do
-		for _, segment in ipairs({ "UpperArm", "LowerArm", "Hand" }) do
-			local target = character:FindFirstChild(side .. segment)
-			if target then
-				block(visual, side .. "Block" .. segment, target, Vector3.new(target.Size.X * 1.05, target.Size.Y * 1.04, target.Size.Z * 1.05), CFrame.new(), segment == "Hand" and skin or palette.Primary, segment == "Hand" and Enum.Material.SmoothPlastic or Enum.Material.Fabric)
-			end
+		local arm = character:FindFirstChild(side .. "UpperArm")
+		local leg = character:FindFirstChild(side .. "UpperLeg")
+		if arm then
+			block(visual, side .. "BlockSleeve", arm, Vector3.new(1.05, 1.42, 1.05), CFrame.new(0, -0.24, 0), palette.Primary, Enum.Material.Fabric)
+			block(visual, side .. "BlockHand", arm, Vector3.new(0.95, 0.62, 0.95), CFrame.new(0, -1.25, 0), skin)
 		end
-		for _, segment in ipairs({ "UpperLeg", "LowerLeg", "Foot" }) do
-			local target = character:FindFirstChild(side .. segment)
-			if target then
-				local foot = segment == "Foot"
-				block(visual, side .. "Block" .. segment, target, Vector3.new(target.Size.X * 1.05, target.Size.Y * 1.04, target.Size.Z * (foot and 1.2 or 1.05)), foot and CFrame.new(0, 0, -0.06) or CFrame.new(), foot and palette.Leather or palette.Deep, Enum.Material.Fabric)
-			end
+		if leg then
+			block(visual, side .. "BlockTrouser", leg, Vector3.new(1.05, 1.38, 1.05), CFrame.new(0, -0.22, 0), palette.Deep, Enum.Material.Fabric)
+			block(visual, side .. "BlockBoot", leg, Vector3.new(1.06, 0.72, 1.28), CFrame.new(0, -1.22, -0.1), palette.Leather, Enum.Material.Fabric)
 		end
 	end
-	return upper or lower
+	return styleAnchor or upper
 end
 
-local function addSharedClothing(visual, torso, palette)
+local function addSharedClothing(visual, character, torso, palette, style)
 	block(visual, "JacketFront", torso, Vector3.new(1.78, 1.68, 0.12), CFrame.new(0, 0.08, -0.6), palette.Primary, Enum.Material.Fabric)
+	block(visual, "JacketLeftSeam", torso, Vector3.new(0.045, 1.58, 0.035), CFrame.new(-0.74, 0.08, -0.68), palette.Accent, Enum.Material.Fabric)
+	block(visual, "JacketRightSeam", torso, Vector3.new(0.045, 1.58, 0.035), CFrame.new(0.74, 0.08, -0.68), palette.Accent, Enum.Material.Fabric)
+	block(visual, "JacketCenterSeam", torso, Vector3.new(0.045, 1.38, 0.035), CFrame.new(0, 0.12, -0.69), palette.Deep, Enum.Material.Fabric)
+	for index = 1, 3 do
+		orb(visual, "JacketButton" .. index, torso, 0.1, CFrame.new(0.12, 0.5 - index * 0.34, -0.71), palette.Accent, Enum.Material.Metal)
+	end
+	wedge(visual, "LeftShirtCollar", torso, Vector3.new(0.52, 0.38, 0.12), CFrame.new(-0.28, 0.78, -0.68) * CFrame.Angles(0, math.rad(180), math.rad(-16)), palette.Light, Enum.Material.Fabric)
+	wedge(visual, "RightShirtCollar", torso, Vector3.new(0.52, 0.38, 0.12), CFrame.new(0.28, 0.78, -0.68) * CFrame.Angles(0, math.rad(180), math.rad(16)), palette.Light, Enum.Material.Fabric)
 	block(visual, "LeatherBelt", torso, Vector3.new(2.1, 0.22, 1.15), CFrame.new(0, -0.5, 0), palette.Leather, Enum.Material.Fabric)
 	block(visual, "BeltBuckle", torso, Vector3.new(0.3, 0.3, 0.12), CFrame.new(0, -0.5, -0.64), palette.Accent, Enum.Material.Metal)
 	block(visual, "LeftJacketHem", torso, Vector3.new(0.82, 0.58, 0.14), CFrame.new(-0.47, -0.83, -0.59), palette.Secondary, Enum.Material.Fabric)
 	block(visual, "RightJacketHem", torso, Vector3.new(0.82, 0.58, 0.14), CFrame.new(0.47, -0.83, -0.59), palette.Secondary, Enum.Material.Fabric)
+	addJacketTailTrim(visual, "JacketHemTrim", torso, palette.Accent)
+	addSleeveTrim(visual, character, palette)
+	if style ~= "FemaleFernGuardian" then
+		addBootLaces(visual, character, palette)
+	end
+	if style == "MaleTrailRanger" or style == "MaleAutumnArcher" or style == "FemaleWildflowerBotanist" or style == "FemalePineScout" then
+		addCargoPockets(visual, character, palette)
+	end
 end
 
 local function crossBodyStrap(visual, name, torso, palette, direction)
@@ -8588,28 +8959,62 @@ end
 
 local function addTrailRanger(visual, character, head, torso, palette)
 	block(visual, "TrailScarf", torso, Vector3.new(1.35, 0.32, 0.22), CFrame.new(0, 0.87, -0.55), palette.Secondary, Enum.Material.Fabric)
+	block(visual, "TrailScarfKnot", torso, Vector3.new(0.32, 0.32, 0.2), CFrame.new(0, 0.68, -0.7) * CFrame.Angles(0, 0, math.rad(45)), palette.Secondary, Enum.Material.Fabric)
+	block(visual, "TrailScarfTail", torso, Vector3.new(0.18, 0.62, 0.12), CFrame.new(0.16, 0.38, -0.68) * CFrame.Angles(0, 0, math.rad(-8)), palette.Secondary, Enum.Material.Fabric)
 	crossBodyStrap(visual, "TrailMapStrap", torso, palette, 1)
+	block(visual, "TrailChestPocket", torso, Vector3.new(0.54, 0.46, 0.1), CFrame.new(-0.48, 0.36, -0.7), palette.Secondary, Enum.Material.Fabric)
+	block(visual, "TrailChestPocketFlap", torso, Vector3.new(0.56, 0.11, 0.12), CFrame.new(-0.48, 0.53, -0.74), palette.Leather, Enum.Material.Fabric)
 	block(visual, "TrailMapPouch", torso, Vector3.new(0.7, 0.68, 0.26), CFrame.new(-0.72, -0.42, -0.68), palette.Light, Enum.Material.Fabric)
-	block(visual, "TrailMapMark", torso, Vector3.new(0.34, 0.05, 0.03), CFrame.new(-0.72, -0.4, -0.83) * CFrame.Angles(0, 0, math.rad(18)), palette.Leather)
+	for index = 1, 3 do
+		block(visual, "TrailMapLine" .. index, torso, Vector3.new(0.42 - index * 0.05, 0.035, 0.025), CFrame.new(-0.72, -0.2 - index * 0.12, -0.83) * CFrame.Angles(0, 0, math.rad(index % 2 == 0 and -18 or 18)), palette.Leather)
+	end
 	for _, side in ipairs({ "Left", "Right" }) do
 		local arm = findFirst(character, { side .. " Arm", side .. "UpperArm" })
-		block(visual, side .. "FernPatch", arm, Vector3.new(0.45, 0.52, 0.08), CFrame.new(0, 0.35, -0.55), palette.Accent, Enum.Material.Fabric)
+		fernMotif(visual, side .. "SleeveFern", arm, 0, 0.34, -0.58, palette.Accent, 0.7)
+		block(visual, side .. "FernPatch", arm, Vector3.new(0.52, 0.05, 0.035), CFrame.new(0, 0.06, -0.59), palette.Accent, Enum.Material.Fabric)
+		local leg = findFirst(character, { side .. " Leg", side .. "UpperLeg" })
+		fernMotif(visual, side .. "TrouserFern", leg, 0, 0.36, -0.58, palette.Secondary, 0.55)
 	end
 end
 
 local function addRiverWarden(visual, character, head, torso, palette)
 	block(visual, "RiverMantle", torso, Vector3.new(2.32, 0.36, 1.25), CFrame.new(0, 0.83, 0), palette.Deep, Enum.Material.Fabric)
 	block(visual, "RiverMantleTrim", torso, Vector3.new(2.36, 0.09, 1.29), CFrame.new(0, 0.64, 0), palette.Accent, Enum.Material.Metal)
+	wedge(visual, "RiverLeftPauldron", torso, Vector3.new(0.7, 0.42, 1.18), CFrame.new(-1.0, 0.75, 0) * CFrame.Angles(0, math.rad(180), 0), palette.Primary, Enum.Material.Fabric)
+	wedge(visual, "RiverRightPauldron", torso, Vector3.new(0.7, 0.42, 1.18), CFrame.new(1.0, 0.75, 0) * CFrame.Angles(0, math.rad(180), 0), palette.Primary, Enum.Material.Fabric)
+	cylinder(visual, "RiverBrooch", torso, Vector3.new(0.1, 0.34, 0.34), CFrame.new(0, 0.68, -0.68) * CFrame.Angles(0, math.rad(90), 0), palette.Light, Enum.Material.Metal)
+	fernMotif(visual, "RiverMantleFern", torso, -0.48, 0.53, -0.7, palette.Light, 0.55)
 	crossBodyStrap(visual, "RiverWardenStrap", torso, palette, -1)
+	block(visual, "RiverCoatLeftPanel", torso, Vector3.new(0.82, 0.86, 0.14), CFrame.new(-0.48, -0.92, -0.59), palette.Primary, Enum.Material.Fabric)
+	block(visual, "RiverCoatRightPanel", torso, Vector3.new(0.82, 0.86, 0.14), CFrame.new(0.48, -0.92, -0.59), palette.Primary, Enum.Material.Fabric)
+	block(visual, "RiverCoatLeftTrim", torso, Vector3.new(0.05, 0.82, 0.035), CFrame.new(-0.88, -0.92, -0.68), palette.Accent, Enum.Material.Fabric)
+	block(visual, "RiverCoatRightTrim", torso, Vector3.new(0.05, 0.82, 0.035), CFrame.new(0.88, -0.92, -0.68), palette.Accent, Enum.Material.Fabric)
+	for index, x in ipairs({ -0.14, 0.14 }) do
+		block(visual, "RiverTasselCord" .. index, torso, Vector3.new(0.055, 0.48, 0.045), CFrame.new(x, 0.34, -0.72), palette.Accent, Enum.Material.Fabric)
+		orb(visual, "RiverTassel" .. index, torso, 0.13, CFrame.new(x, 0.08, -0.72), palette.Accent, Enum.Material.Fabric)
+	end
 	local arm = findFirst(character, { "Right Arm", "RightHand", "RightLowerArm" }) or torso
 	block(visual, "LanternFrame", arm, Vector3.new(0.62, 0.82, 0.62), CFrame.new(0.12, -0.82, -0.18), palette.Leather, Enum.Material.Metal)
 	block(visual, "LanternGlow", arm, Vector3.new(0.4, 0.54, 0.4), CFrame.new(0.12, -0.82, -0.18), palette.Accent, Enum.Material.Neon)
 	block(visual, "LanternHandle", arm, Vector3.new(0.12, 0.55, 0.12), CFrame.new(0.12, -0.22, -0.18), palette.Leather, Enum.Material.Metal)
+	for index, x in ipairs({ -0.16, 0.4 }) do
+		block(visual, "LanternRail" .. index, arm, Vector3.new(0.07, 0.82, 0.07), CFrame.new(x, -0.82, -0.5), palette.Deep, Enum.Material.Metal)
+	end
 end
 
 local function addAutumnArcher(visual, character, head, torso, palette)
 	block(visual, "AutumnScarf", torso, Vector3.new(1.45, 0.38, 0.24), CFrame.new(0, 0.84, -0.55), palette.Secondary, Enum.Material.Fabric)
+	block(visual, "AutumnScarfFold", torso, Vector3.new(1.28, 0.13, 0.08), CFrame.new(0, 0.92, -0.7), palette.Accent, Enum.Material.Fabric)
+	block(visual, "AutumnScarfTail", torso, Vector3.new(0.28, 0.72, 0.12), CFrame.new(-0.28, 0.46, -0.69) * CFrame.Angles(0, 0, math.rad(12)), palette.Secondary, Enum.Material.Fabric)
 	crossBodyStrap(visual, "ArcherChestStrap", torso, palette, -1)
+	crossBodyStrap(visual, "ArcherSecondStrap", torso, palette, 1)
+	for _, x in ipairs({ -0.65, 0.65 }) do
+		block(visual, x < 0 and "ArcherLeftPouch" or "ArcherRightPouch", torso, Vector3.new(0.5, 0.45, 0.25), CFrame.new(x, -0.52, -0.68), palette.Leather, Enum.Material.Fabric)
+	end
+	block(visual, "AutumnTunicTrim", torso, Vector3.new(1.86, 0.08, 0.04), CFrame.new(0, -1.08, -0.68), palette.Secondary, Enum.Material.Fabric)
+	for index, x in ipairs({ -0.7, -0.35, 0, 0.35, 0.7 }) do
+		wedge(visual, "AutumnPointedHem" .. index, torso, Vector3.new(0.34, 0.28, 0.12), CFrame.new(x, -1.18, -0.62) * CFrame.Angles(0, math.rad(180), 0), palette.Secondary, Enum.Material.Fabric)
+	end
 	block(visual, "CompactQuiver", torso, Vector3.new(0.48, 1.55, 0.42), CFrame.new(0.72, 0.18, 0.73) * CFrame.Angles(0, 0, math.rad(-14)), palette.Leather, Enum.Material.Wood)
 	for index, x in ipairs({ 0.58, 0.72, 0.86 }) do
 		block(visual, "Arrow" .. index, torso, Vector3.new(0.09, 1.55, 0.09), CFrame.new(x, 0.75, 0.78) * CFrame.Angles(0, 0, math.rad(-14)), palette.Light, Enum.Material.Wood)
@@ -8617,11 +9022,23 @@ local function addAutumnArcher(visual, character, head, torso, palette)
 	block(visual, "BowUpper", torso, Vector3.new(0.12, 1.25, 0.14), CFrame.new(1.28, 0.55, -0.1) * CFrame.Angles(0, 0, math.rad(-18)), palette.Leather, Enum.Material.Wood)
 	block(visual, "BowLower", torso, Vector3.new(0.12, 1.25, 0.14), CFrame.new(1.28, -0.55, -0.1) * CFrame.Angles(0, 0, math.rad(18)), palette.Leather, Enum.Material.Wood)
 	block(visual, "BowGrip", torso, Vector3.new(0.18, 0.48, 0.18), CFrame.new(1.12, 0, -0.1), palette.Deep, Enum.Material.Fabric)
+	block(visual, "BowString", torso, Vector3.new(0.035, 2.36, 0.035), CFrame.new(1.48, 0, -0.1), palette.Light, Enum.Material.Fabric)
+	for _, side in ipairs({ "Left", "Right" }) do
+		local arm = findFirst(character, { side .. " Arm", side .. "UpperArm" })
+		block(visual, side .. "AutumnArmBand", arm, Vector3.new(1.08, 0.12, 1.08), CFrame.new(0, 0.08, 0), palette.Secondary, Enum.Material.Fabric)
+	end
 end
 
 local function addWildflowerBotanist(visual, character, head, torso, palette)
+	wedge(visual, "BotanistLeftCollar", torso, Vector3.new(0.62, 0.42, 0.14), CFrame.new(-0.3, 0.78, -0.7) * CFrame.Angles(0, math.rad(180), math.rad(-18)), palette.Light, Enum.Material.Fabric)
+	wedge(visual, "BotanistRightCollar", torso, Vector3.new(0.62, 0.42, 0.14), CFrame.new(0.3, 0.78, -0.7) * CFrame.Angles(0, math.rad(180), math.rad(18)), palette.Light, Enum.Material.Fabric)
 	block(visual, "BotanistApron", torso, Vector3.new(1.48, 1.58, 0.13), CFrame.new(0, -0.08, -0.62), palette.Light, Enum.Material.Fabric)
+	block(visual, "ApronWaistTie", torso, Vector3.new(1.62, 0.16, 0.12), CFrame.new(0, 0.08, -0.71), palette.Leather, Enum.Material.Fabric)
 	block(visual, "ApronPocket", torso, Vector3.new(0.72, 0.5, 0.12), CFrame.new(0.3, -0.46, -0.71), palette.Light:Lerp(palette.Leather, 0.18), Enum.Material.Fabric)
+	fernMotif(visual, "ApronFern", torso, -0.23, -0.46, -0.78, palette.Leather, 0.48)
+	for index, x in ipairs({ 0.17, 0.34, 0.51 }) do
+		block(visual, "BotanistTool" .. index, torso, Vector3.new(0.055, 0.55 - index * 0.06, 0.05), CFrame.new(x, -0.12, -0.8) * CFrame.Angles(0, 0, math.rad((index - 2) * 8)), index == 2 and palette.Accent or palette.Leather, index == 2 and Enum.Material.Metal or Enum.Material.Wood)
+	end
 	crossBodyStrap(visual, "BotanistSatchelStrap", torso, palette, 1)
 	block(visual, "FlowerSatchel", torso, Vector3.new(0.7, 0.62, 0.28), CFrame.new(-0.76, -0.43, -0.68), palette.Leather, Enum.Material.Fabric)
 	for index, flower in ipairs({
@@ -8634,29 +9051,59 @@ local function addWildflowerBotanist(visual, character, head, torso, palette)
 	for index, x in ipairs({ -0.62, -0.36 }) do
 		orb(visual, "HairFlower" .. index, head, 0.24, CFrame.new(x, 0.78, -0.72), index == 1 and palette.Light or palette.Accent, Enum.Material.Fabric)
 	end
+	for index, x in ipairs({ 0.38, 0.61 }) do
+		orb(visual, "RightHairFlower" .. index, head, 0.2, CFrame.new(x, 0.76, -0.72), index == 1 and palette.Accent or palette.Light, Enum.Material.Fabric)
+	end
+	for _, side in ipairs({ "Left", "Right" }) do
+		local arm = findFirst(character, { side .. " Arm", side .. "UpperArm" })
+		fernMotif(visual, side .. "BotanistSleeveFlowers", arm, 0, 0.28, -0.58, palette.Accent, 0.55)
+	end
 end
 
 local function addFernGuardian(visual, character, head, torso, palette)
-	block(visual, "FernBreastplate", torso, Vector3.new(1.72, 1.48, 0.18), CFrame.new(0, 0.08, -0.64), palette.Light, Enum.Material.Metal)
+	block(visual, "GuardianNeckWrap", torso, Vector3.new(1.42, 0.34, 0.22), CFrame.new(0, 0.86, -0.55), palette.Deep, Enum.Material.Fabric)
+	block(visual, "FernBreastplate", torso, Vector3.new(1.72, 1.48, 0.18), CFrame.new(0, 0.08, -0.64), palette.Primary, Enum.Material.Fabric)
 	block(visual, "GreenTabard", torso, Vector3.new(0.92, 1.75, 0.12), CFrame.new(0, -0.02, -0.75), palette.Primary, Enum.Material.Fabric)
+	fernMotif(visual, "GuardianChestFern", torso, 0, 0.18, -0.83, palette.Light, 1.05)
+	block(visual, "GuardianTabardLeftTrim", torso, Vector3.new(0.05, 1.62, 0.035), CFrame.new(-0.45, -0.05, -0.83), palette.Accent, Enum.Material.Metal)
+	block(visual, "GuardianTabardRightTrim", torso, Vector3.new(0.05, 1.62, 0.035), CFrame.new(0.45, -0.05, -0.83), palette.Accent, Enum.Material.Metal)
 	for _, side in ipairs({ "Left", "Right" }) do
 		local arm = findFirst(character, { side .. " Arm", side .. "UpperArm" })
 		local leg = findFirst(character, { side .. " Leg", side .. "LowerLeg" })
-		block(visual, side .. "ShoulderArmor", arm or torso, Vector3.new(1.08, 0.48, 1.14), arm and CFrame.new(0, 0.66, 0) or CFrame.new(side == "Left" and -1.05 or 1.05, 0.68, 0), palette.Light, Enum.Material.Metal)
+		wedge(visual, side .. "ShoulderArmor", arm or torso, Vector3.new(1.12, 0.54, 1.18), arm and CFrame.new(0, 0.66, 0) * CFrame.Angles(0, math.rad(180), 0) or CFrame.new(side == "Left" and -1.05 or 1.05, 0.68, 0) * CFrame.Angles(0, math.rad(180), 0), palette.Light, Enum.Material.Metal)
+		block(visual, side .. "ArmorEdge", arm or torso, Vector3.new(1.14, 0.08, 1.2), arm and CFrame.new(0, 0.38, 0) or CFrame.new(side == "Left" and -1.05 or 1.05, 0.4, 0), palette.Deep, Enum.Material.Metal)
+		block(visual, side .. "GuardianGauntlet", arm, Vector3.new(1.08, 0.68, 1.12), CFrame.new(0, -0.22, 0), palette.Light, Enum.Material.Metal)
 		block(visual, side .. "GuardianGreave", leg, Vector3.new(1.08, 0.72, 1.14), CFrame.new(0, -0.55, -0.04), palette.Accent, Enum.Material.Metal)
+		wedge(visual, side .. "GuardianKnee", leg, Vector3.new(0.9, 0.55, 0.25), CFrame.new(0, 0.04, -0.62) * CFrame.Angles(0, math.rad(180), 0), palette.Light, Enum.Material.Metal)
 	end
-	cylinder(visual, "FernRoundShield", torso, Vector3.new(0.18, 1.65, 1.65), CFrame.new(1.24, -0.05, -0.62) * CFrame.Angles(0, math.rad(90), 0), palette.Primary, Enum.Material.Metal)
+	cylinder(visual, "ShieldRim", torso, Vector3.new(0.2, 1.82, 1.82), CFrame.new(1.24, -0.05, -0.59) * CFrame.Angles(0, math.rad(90), 0), palette.Light, Enum.Material.Metal)
+	cylinder(visual, "FernRoundShield", torso, Vector3.new(0.22, 1.62, 1.62), CFrame.new(1.24, -0.05, -0.64) * CFrame.Angles(0, math.rad(90), 0), palette.Primary, Enum.Material.Metal)
 	cylinder(visual, "ShieldBoss", torso, Vector3.new(0.23, 0.46, 0.46), CFrame.new(1.24, -0.05, -0.73) * CFrame.Angles(0, math.rad(90), 0), palette.Light, Enum.Material.Metal)
+	fernMotif(visual, "ShieldFern", torso, 1.24, -0.05, -0.88, palette.Light, 0.95)
 end
 
 local function addPineScout(visual, character, head, torso, palette)
 	block(visual, "PineHoodTop", head, Vector3.new(2.14, 0.45, 1.58), CFrame.new(0, 0.82, 0.02), palette.Primary, Enum.Material.Fabric)
 	block(visual, "PineHoodLeft", head, Vector3.new(0.32, 1.25, 1.55), CFrame.new(-0.94, 0.26, 0), palette.Primary, Enum.Material.Fabric)
 	block(visual, "PineHoodRight", head, Vector3.new(0.32, 1.25, 1.55), CFrame.new(0.94, 0.26, 0), palette.Primary, Enum.Material.Fabric)
+	wedge(visual, "PineHoodPeak", head, Vector3.new(0.75, 0.42, 0.55), CFrame.new(-0.52, 0.86, -0.58) * CFrame.Angles(0, math.rad(180), math.rad(-8)), palette.Primary, Enum.Material.Fabric)
+	fernMotif(visual, "HoodLeafPin", head, -0.72, 0.6, -0.81, palette.Accent, 0.42)
 	crossBodyStrap(visual, "PineScoutStrapLeft", torso, palette, -1)
 	crossBodyStrap(visual, "PineScoutStrapRight", torso, palette, 1)
+	for _, x in ipairs({ -0.68, 0.68 }) do
+		block(visual, x < 0 and "PineLeftBeltPouch" or "PineRightBeltPouch", torso, Vector3.new(0.48, 0.42, 0.24), CFrame.new(x, -0.52, -0.67), palette.Leather, Enum.Material.Fabric)
+		block(visual, x < 0 and "PineLeftPouchClasp" or "PineRightPouchClasp", torso, Vector3.new(0.12, 0.12, 0.05), CFrame.new(x, -0.5, -0.82), palette.Accent, Enum.Material.Metal)
+	end
 	block(visual, "CompactFieldPack", torso, Vector3.new(1.25, 1.32, 0.36), CFrame.new(0, -0.02, 0.72), palette.Leather, Enum.Material.Fabric)
 	block(visual, "FieldNotebook", torso, Vector3.new(0.42, 0.56, 0.16), CFrame.new(0.76, -0.42, -0.66), palette.Light, Enum.Material.Fabric)
+	cylinder(visual, "ScoutVial", torso, Vector3.new(0.18, 0.44, 0.18), CFrame.new(-0.78, -0.3, -0.72) * CFrame.Angles(0, 0, math.rad(90)), palette.Accent, Enum.Material.Glass)
+	for _, side in ipairs({ "Left", "Right" }) do
+		local arm = findFirst(character, { side .. " Arm", side .. "UpperArm" })
+		block(visual, side .. "PineSleeveGoldStitch", arm, Vector3.new(0.64, 0.045, 0.035), CFrame.new(0, 0.34, -0.58), palette.Accent, Enum.Material.Fabric)
+		local leg = findFirst(character, { side .. " Leg", side .. "UpperLeg" })
+		block(visual, side .. "TrouserPatch", leg, Vector3.new(0.52, 0.38, 0.08), CFrame.new(0, 0.36, -0.58), palette.Secondary, Enum.Material.Fabric)
+		fernMotif(visual, side .. "TrouserPatchLeaf", leg, 0, 0.36, -0.64, palette.Accent, 0.38)
+	end
 end
 
 local ROLE_BUILDERS = {
@@ -8705,7 +9152,7 @@ function AvatarModels.Apply(character, outfitOrId)
 	else
 		addFemaleHair(visual, head, animatedTorso, palette, outfit.Style)
 	end
-	addSharedClothing(visual, animatedTorso, palette)
+	addSharedClothing(visual, character, animatedTorso, palette, outfit.Style)
 	ROLE_BUILDERS[outfit.Style](visual, character, head, animatedTorso, palette)
 	return visual
 end
@@ -8745,6 +9192,107 @@ function AvatarModels.BuildPreview(parent, avatarId)
 end
 
 return table.freeze(AvatarModels)
+]]></ProtectedString>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="46">
+          <Properties>
+            <string name="Name">AdaptiveWorldText</string>
+            <ProtectedString name="Source"><![CDATA[--[[
+	Keeps background-free world text readable while the camera moves.
+
+	A BillboardGui cannot sample the final rendered pixel behind itself, but it
+	can cast a ray from the label away from the camera and inspect the first world
+	surface behind the words. The module then chooses approved light or dark ink
+	by measured WCAG contrast. If the ray sees only sky, local day/night lighting
+	provides the backdrop instead.
+]]
+
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local WildwoodStyle = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("WildwoodStyle"))
+
+local AdaptiveWorldText = {
+	DarkText = WildwoodStyle.Colors.Ink,
+	LightText = WildwoodStyle.Colors.White,
+	MinContrast = 4.5,
+}
+
+local function channel(value)
+	if value <= 0.04045 then
+		return value / 12.92
+	end
+	return ((value + 0.055) / 1.055) ^ 2.4
+end
+
+local function luminance(color)
+	return 0.2126 * channel(color.R) + 0.7152 * channel(color.G) + 0.0722 * channel(color.B)
+end
+
+local function contrast(first, second)
+	local high, low = luminance(first), luminance(second)
+	if high < low then
+		high, low = low, high
+	end
+	return (high + 0.05) / (low + 0.05)
+end
+
+AdaptiveWorldText.contrast = contrast
+
+function AdaptiveWorldText.textFor(background)
+	if contrast(AdaptiveWorldText.DarkText, background) >= contrast(AdaptiveWorldText.LightText, background) then
+		return AdaptiveWorldText.DarkText
+	end
+	return AdaptiveWorldText.LightText
+end
+
+function AdaptiveWorldText.defaultBackdrop()
+	local hour = Lighting.ClockTime or 12
+	if hour < 6 or hour >= 18 then
+		return WildwoodStyle.World.NightSky
+	end
+	return WildwoodStyle.World.DaySky
+end
+
+function AdaptiveWorldText.backdropAt(camera, worldPosition, exclusions)
+	if not camera or not worldPosition then
+		return AdaptiveWorldText.defaultBackdrop()
+	end
+	local throughLabel = worldPosition - camera.CFrame.Position
+	if throughLabel.Magnitude < 0.1 then
+		return AdaptiveWorldText.defaultBackdrop()
+	end
+
+	local direction = throughLabel.Unit
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = exclusions or {}
+	params.IgnoreWater = false
+	local result = workspace:Raycast(worldPosition + direction * 0.75, direction * 500, params)
+	local instance = result and result.Instance
+	if instance and instance:IsA("BasePart") then
+		return instance.Color
+	end
+	return AdaptiveWorldText.defaultBackdrop()
+end
+
+function AdaptiveWorldText.apply(label, background)
+	local textColor = AdaptiveWorldText.textFor(background)
+	local lightText = textColor == AdaptiveWorldText.LightText
+	label.TextColor3 = textColor
+	label.TextStrokeColor3 = lightText and AdaptiveWorldText.DarkText or AdaptiveWorldText.LightText
+	label.TextStrokeTransparency = 0.08
+	label:SetAttribute("AdaptiveWorldText", true)
+	label:SetAttribute("MeasuredContrast", contrast(textColor, background))
+	return textColor
+end
+
+function AdaptiveWorldText.update(label, camera, worldPosition, exclusions)
+	return AdaptiveWorldText.apply(label, AdaptiveWorldText.backdropAt(camera, worldPosition, exclusions))
+end
+
+return table.freeze(AdaptiveWorldText)
 ]]></ProtectedString>
           </Properties>
         </Item>
@@ -8791,10 +9339,15 @@ local toast = Instance.new("RemoteEvent")
 toast.Name = RemoteNames.Toast
 toast.Parent = remoteFolder
 
+local guildAction = Instance.new("RemoteEvent")
+guildAction.Name = RemoteNames.GuildAction
+guildAction.Parent = remoteFolder
+
 local remotes = {
 	Request = request,
 	StateChanged = stateChanged,
 	Toast = toast,
+	GuildAction = guildAction,
 }
 
 local Services = script.Parent:WaitForChild("Services")
@@ -9765,6 +10318,13 @@ function GameService:_isNearWaypoint(player, waypointId, maximumDistance)
 	return root ~= nil and target ~= nil and (root.Position - target).Magnitude <= maximumDistance
 end
 
+function GameService:_isNearAdventureGuild(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	return root ~= nil
+		and (root.CFrame.Position - Config.AdventureGuildCenter).Magnitude <= Config.AdventureGuildTravelRadius
+end
+
 function GameService:_levelPet(pet)
 	while pet.XP >= pet.Level * 25 do
 		pet.XP -= pet.Level * 25
@@ -10453,6 +11013,12 @@ function GameService:_handleAction(player, action, payload)
 		)
 	elseif action == "Teleport" then
 		local destination = payload.destination
+		if not self:_isNearAdventureGuild(player) then
+			return false, bilingualMessage(
+				"Travel from the map station at the Adventure Guild in the town centre.",
+				"เดินทางได้ที่จุดแผนที่ของ Adventure Guild ตรงกลางเมือง"
+			)
+		end
 		if destination == "Home" then
 			self._world:TeleportHome(player)
 		elseif type(destination) == "string" and Config.Waypoints[destination] then
@@ -10461,6 +11027,9 @@ function GameService:_handleAction(player, action, payload)
 			return false, "That place is not on your map."
 		end
 		return true, string.format("Welcome to %s!", destination)
+	elseif action == "TeleportHome" then
+		self._world:TeleportHome(player)
+		return true, bilingualMessage("Welcome home!", "ยินดีต้อนรับกลับบ้าน!")
 	elseif action == "FinishOnboarding" then
 		data.Settings.Onboarded = true
 		self:_progressQuest(player, "FinishOnboarding", 1)
@@ -10580,6 +11149,14 @@ local FURNITURE_TAG = RemoteNames.FurnitureTag
 -- Top of the house floor, in house-local studs. Furniture stands on this.
 local HOME_FLOOR_TOP = 1
 
+-- The adventure river is real Terrain water rather than a collidable glass
+-- plate. Dimensions are multiples of four so FillBlock lines up cleanly with
+-- Roblox terrain voxels and leaves a dependable swimming volume.
+local ADVENTURE_RIVER_SIZE = Vector3.new(104, 8, 96)
+local ADVENTURE_RIVER_SURFACE_Y = 1
+local SUNNY_LAKE_SIZE = Vector3.new(80, 8, 48)
+local SUNNY_LAKE_SURFACE_Y = 1
+
 local WorldService = {}
 WorldService.__index = WorldService
 
@@ -10600,7 +11177,7 @@ local COLORS = {
 	White = VILLAGE.PlasterShade,
 	Soil = VILLAGE.Soil,
 	Leaf = VILLAGE.Foliage,
-	Water = VILLAGE.Water,
+	Water = VILLAGE.ClearWater,
 }
 
 local ADVENTURE_COLORS = Config.AdventurePalette
@@ -10667,12 +11244,404 @@ local function part(parent, name, size, cframe, color, material, shape)
 	return object
 end
 
+-- A shared campfire kit for both the public adventure camp and each player's
+-- campsite. The previous version was a neon ball inside a mathematically even
+-- ring of round stones, which read as a placeholder from every camera angle.
+-- These crossed cylindrical logs, visible cut ends, irregular embers and
+-- layered wedge tongues create the silhouette of a real wood fire. Roblox's
+-- animated Fire supplies the constantly changing edge that solid geometry
+-- alone cannot provide.
+local function buildCampfire(parent, origin, scale)
+	scale = scale or 1
+
+	local model = Instance.new("Model")
+	model.Name = "Campfire"
+	model:SetAttribute("CampfireStyle", "CrossedLogsAndLayeredFlames")
+	model:SetAttribute("CircularLayout", false)
+	model.Parent = parent
+
+	local function scaledSize(x, y, z)
+		return Vector3.new(x * scale, y * scale, z * scale)
+	end
+
+	local function scaledOffset(x, y, z)
+		return CFrame.new(x * scale, y * scale, z * scale)
+	end
+
+	-- Three pieces of split firewood overlap at different heights and angles.
+	-- A cylinder's long axis is X, so every end-grain disc and bark band can be
+	-- positioned relative to the finished log CFrame without circular placement.
+	local logLength = 5.4 * scale
+	local logDiameter = 0.82 * scale
+	local logSpecs = {
+		{ Y = 0.64, Z = -0.18, Yaw = 34, Roll = 4 },
+		{ Y = 0.78, Z = 0.16, Yaw = -38, Roll = -5 },
+		{ Y = 0.93, Z = -0.02, Yaw = 88, Roll = 3 },
+	}
+	for index, spec in ipairs(logSpecs) do
+		local logCFrame = origin
+			* scaledOffset(0, spec.Y, spec.Z)
+			* CFrame.Angles(0, math.rad(spec.Yaw), math.rad(spec.Roll))
+		local log = part(
+			model,
+			"FirewoodLog",
+			Vector3.new(logLength, logDiameter, logDiameter),
+			logCFrame,
+			VILLAGE.TimberWarm,
+			Enum.Material.Wood,
+			Enum.PartType.Cylinder
+		)
+		log.CanCollide = false
+		log:SetAttribute("LogIndex", index)
+
+		for _, direction in ipairs({ -1, 1 }) do
+			local endCFrame = logCFrame * CFrame.new(direction * (logLength / 2 + 0.018 * scale), 0, 0)
+			local endGrain = part(
+				model,
+				"FirewoodEndGrain",
+				scaledSize(0.10, 0.72, 0.72),
+				endCFrame,
+				VILLAGE.TimberLight,
+				Enum.Material.Wood,
+				Enum.PartType.Cylinder
+			)
+			endGrain.CanCollide = false
+
+			local heartwood = part(
+				model,
+				"FirewoodHeartwood",
+				scaledSize(0.115, 0.39, 0.39),
+				endCFrame * CFrame.new(direction * 0.012 * scale, 0, 0),
+				VILLAGE.TimberMid,
+				Enum.Material.Wood,
+				Enum.PartType.Cylinder
+			)
+			heartwood.CanCollide = false
+		end
+
+		for _, localX in ipairs({ -1.05, 1.18 }) do
+			local barkBand = part(
+				model,
+				"CharredBarkBand",
+				scaledSize(0.16, 0.90, 0.90),
+				logCFrame * scaledOffset(localX, 0, 0),
+				VILLAGE.TimberDeep,
+				Enum.Material.Wood,
+				Enum.PartType.Cylinder
+			)
+			barkBand.CanCollide = false
+		end
+	end
+
+	-- Fixed, uneven ember chunks sit between the crossed wood instead of forming
+	-- another perfect ring. Their low orange glow visually joins logs and flame.
+	for index, ember in ipairs({
+		{ X = -0.72, Y = 0.67, Z = -0.34, S = 0.43 },
+		{ X = 0.18, Y = 0.72, Z = 0.54, S = 0.36 },
+		{ X = 0.70, Y = 0.64, Z = -0.12, S = 0.31 },
+		{ X = -0.14, Y = 0.83, Z = -0.63, S = 0.27 },
+	}) do
+		local emberPart = part(
+			model,
+			"GlowingEmber",
+			scaledSize(ember.S, ember.S * 0.72, ember.S * 0.84),
+			origin * scaledOffset(ember.X, ember.Y, ember.Z) * CFrame.Angles(0, math.rad(index * 29), math.rad(index * 7)),
+			ADVENTURE_COLORS.SunsetOrange,
+			Enum.Material.Neon
+		)
+		emberPart.CanCollide = false
+		emberPart.CastShadow = false
+	end
+
+	local flameSpecs = {
+		{ Name = "OuterFlameTongue", Layer = "Outer", Size = { 1.30, 3.30, 0.74 }, Offset = { -0.50, 2.30, 0.18 }, Yaw = -28, Roll = -6, Color = ADVENTURE_COLORS.SunsetOrange, Transparency = 0.08 },
+		{ Name = "OuterFlameTongue", Layer = "Outer", Size = { 1.08, 4.05, 0.68 }, Offset = { 0.22, 2.58, -0.18 }, Yaw = 20, Roll = 7, Color = ADVENTURE_COLORS.SunsetOrange, Transparency = 0.12 },
+		{ Name = "OuterFlameTongue", Layer = "Outer", Size = { 0.88, 2.62, 0.62 }, Offset = { 0.67, 2.08, 0.28 }, Yaw = 58, Roll = -8, Color = ADVENTURE_COLORS.SunsetOrange, Transparency = 0.10 },
+		{ Name = "OuterFlameTongue", Layer = "Outer", Size = { 0.78, 2.34, 0.58 }, Offset = { -0.12, 1.98, -0.61 }, Yaw = -63, Roll = 9, Color = ADVENTURE_COLORS.SunsetOrange, Transparency = 0.14 },
+		{ Name = "InnerFlameTongue", Layer = "Inner", Size = { 0.76, 2.52, 0.50 }, Offset = { -0.04, 1.92, 0.08 }, Yaw = 7, Roll = -4, Color = VILLAGE.Lantern, Transparency = 0.04 },
+		{ Name = "InnerFlameTongue", Layer = "Inner", Size = { 0.58, 1.76, 0.42 }, Offset = { 0.37, 1.65, -0.16 }, Yaw = 46, Roll = 7, Color = ADVENTURE_COLORS.SoftYellow, Transparency = 0.02 },
+	}
+
+	local flameCore
+	for _, spec in ipairs(flameSpecs) do
+		local flame = Instance.new("WedgePart")
+		flame.Name = spec.Name
+		flame.Size = scaledSize(spec.Size[1], spec.Size[2], spec.Size[3])
+		flame.CFrame = origin
+			* scaledOffset(spec.Offset[1], spec.Offset[2], spec.Offset[3])
+			* CFrame.Angles(0, math.rad(spec.Yaw), math.rad(spec.Roll))
+		flame.Color = spec.Color
+		flame.Material = Enum.Material.Neon
+		flame.Transparency = spec.Transparency
+		flame.Anchored = true
+		flame.CanCollide = false
+		flame.CastShadow = false
+		flame.TopSurface = Enum.SurfaceType.Smooth
+		flame.BottomSurface = Enum.SurfaceType.Smooth
+		flame:SetAttribute("FlameLayer", spec.Layer)
+		flame.Parent = model
+		if spec.Layer == "Inner" and not flameCore then
+			flameCore = flame
+		end
+	end
+
+	local livingFlame = Instance.new("Fire")
+	livingFlame.Name = "LivingFlame"
+	livingFlame.Color = VILLAGE.Lantern
+	livingFlame.SecondaryColor = ADVENTURE_COLORS.SunsetOrange
+	livingFlame.Heat = 7 * scale
+	livingFlame.Size = 4.7 * scale
+	livingFlame.TimeScale = 1.15
+	livingFlame.Parent = flameCore
+
+	local smoke = Instance.new("Smoke")
+	smoke.Name = "FireSmoke"
+	smoke.Color = VILLAGE.StoneDeep
+	smoke.Opacity = 0.09
+	smoke.RiseVelocity = 3.2 * scale
+	smoke.Size = 2.1 * scale
+	smoke.Parent = flameCore
+
+	local light = Instance.new("PointLight")
+	light.Name = "Firelight"
+	light.Color = ADVENTURE_COLORS.SoftYellow
+	light.Brightness = 1.35
+	light.Range = 24 * scale
+	light.Shadows = true
+	light.Parent = flameCore
+
+	return model
+end
+
+-- Every real body of water is filled through this one function, so Sunny Lake
+-- and the adventure river cannot drift apart in colour, transparency or wave
+-- motion. Terrain Water supplies engine swimming, buoyancy and underwater view.
+local function fillClearMovingWater(waterCFrame, waterSize)
+	local terrain = workspace:FindFirstChildOfClass("Terrain")
+	if not terrain then
+		return nil
+	end
+	terrain.WaterColor = VILLAGE.ClearWater
+	-- High optical transparency and low reflectance keep the entire avatar
+	-- readable through the surface while retaining a clearly blue water body.
+	terrain.WaterTransparency = 0.65
+	terrain.WaterReflectance = 0.04
+	terrain.WaterWaveSize = 0.12
+	terrain.WaterWaveSpeed = 12
+	terrain:FillBlock(waterCFrame, waterSize, Enum.Material.Water)
+	return terrain
+end
+
+-- Builds a deep, swimmable river channel. Terrain Water gives Humanoids the
+-- engine's Swimming state, buoyancy, drag and underwater camera treatment.
+-- Thin non-colliding streaks above it are client-animated to communicate the
+-- downstream current without replacing the physical water with another plate.
+local function buildSwimmableRiver(parent, riverCenter)
+	local waterCenterY = ADVENTURE_RIVER_SURFACE_Y - ADVENTURE_RIVER_SIZE.Y / 2
+	local waterCFrame = CFrame.new(riverCenter.X, waterCenterY, riverCenter.Z)
+
+	fillClearMovingWater(waterCFrame, ADVENTURE_RIVER_SIZE)
+
+	local swimVolume = part(
+		parent,
+		"AdventureRiver",
+		ADVENTURE_RIVER_SIZE + Vector3.new(0, 4, 0),
+		waterCFrame + Vector3.new(0, 1.5, 0),
+		ADVENTURE_COLORS.RiverBlue,
+		Enum.Material.SmoothPlastic
+	)
+	swimVolume.Transparency = 1
+	swimVolume.CanCollide = false
+	swimVolume.CanTouch = false
+	swimVolume.CanQuery = false
+	swimVolume.CastShadow = false
+	swimVolume:SetAttribute("SwimmableTerrainWater", true)
+	swimVolume:SetAttribute("SurfaceY", ADVENTURE_RIVER_SURFACE_Y)
+	swimVolume:SetAttribute("FlowX", 0)
+	swimVolume:SetAttribute("FlowZ", 1)
+	swimVolume:SetAttribute("FlowSpeed", 5.5)
+	swimVolume:SetAttribute("FlowAcceleration", 2.4)
+	CollectionService:AddTag(swimVolume, RemoteNames.SwimmableWaterTag)
+
+	local riverBed = part(
+		parent,
+		"RiverBed",
+		Vector3.new(ADVENTURE_RIVER_SIZE.X, 1, ADVENTURE_RIVER_SIZE.Z),
+		CFrame.new(riverCenter.X, -7.5, riverCenter.Z),
+		VILLAGE.StoneLight,
+		Enum.Material.Ground
+	)
+	riverBed:SetAttribute("UnderwaterDepth", 8)
+
+	-- Two tiers around all four sides provide a gradual wading entry and a place
+	-- to stand before the channel drops to swimming depth. Players never face an
+	-- invisible vertical wall when they try to climb back onto land.
+	local bankSpecs = {
+		{ Name = "RiverShallowBank", Size = Vector3.new(14, 1, 76), Offset = Vector3.new(-45, -1.0, 0) },
+		{ Name = "RiverShallowBank", Size = Vector3.new(14, 1, 76), Offset = Vector3.new(45, -1.0, 0) },
+		{ Name = "RiverShallowBank", Size = Vector3.new(76, 1, 14), Offset = Vector3.new(0, -1.0, -41) },
+		{ Name = "RiverShallowBank", Size = Vector3.new(76, 1, 14), Offset = Vector3.new(0, -1.0, 41) },
+		{ Name = "RiverMidBank", Size = Vector3.new(8, 1, 68), Offset = Vector3.new(-34, -3.0, 0) },
+		{ Name = "RiverMidBank", Size = Vector3.new(8, 1, 68), Offset = Vector3.new(34, -3.0, 0) },
+		{ Name = "RiverMidBank", Size = Vector3.new(60, 1, 8), Offset = Vector3.new(0, -3.0, -30) },
+		{ Name = "RiverMidBank", Size = Vector3.new(60, 1, 8), Offset = Vector3.new(0, -3.0, 30) },
+	}
+	for _, spec in ipairs(bankSpecs) do
+		local bank = part(
+			parent,
+			spec.Name,
+			spec.Size,
+			CFrame.new(riverCenter + spec.Offset),
+			VILLAGE.StoneLight,
+			Enum.Material.Ground
+		)
+		bank:SetAttribute("WaterEntryTier", spec.Name == "RiverShallowBank" and 1 or 2)
+	end
+
+	-- Each streak begins from the same channel centre; FlowPhase distributes it
+	-- along the river, and the client wraps it continuously downstream.
+	local ribbonSpecs = {
+		{ X = -42, Width = 0.22, Length = 14, Phase = 0.05, Speed = 5.0 },
+		{ X = -29, Width = 0.16, Length = 20, Phase = 0.48, Speed = 5.8 },
+		{ X = -16, Width = 0.24, Length = 12, Phase = 0.78, Speed = 4.7 },
+		{ X = -3, Width = 0.18, Length = 17, Phase = 0.27, Speed = 6.1 },
+		{ X = 11, Width = 0.26, Length = 11, Phase = 0.63, Speed = 5.3 },
+		{ X = 26, Width = 0.17, Length = 19, Phase = 0.90, Speed = 5.9 },
+		{ X = 40, Width = 0.21, Length = 15, Phase = 0.36, Speed = 4.9 },
+	}
+	for index, spec in ipairs(ribbonSpecs) do
+		local ribbon = part(
+			parent,
+			"RiverCurrentRibbon",
+			Vector3.new(spec.Width, 0.035, spec.Length),
+			CFrame.new(riverCenter + Vector3.new(spec.X, ADVENTURE_RIVER_SURFACE_Y + 0.08, 0)),
+			index % 2 == 0 and VILLAGE.ClearWaterLight or VILLAGE.ClearWater,
+			Enum.Material.Glass
+		)
+		ribbon.Transparency = index % 2 == 0 and 0.64 or 0.76
+		ribbon.CanCollide = false
+		ribbon.CanTouch = false
+		ribbon.CanQuery = false
+		ribbon.CastShadow = false
+		ribbon:SetAttribute("FlowPhase", spec.Phase)
+		ribbon:SetAttribute("FlowSpeed", spec.Speed)
+		ribbon:SetAttribute("FlowSpan", 72)
+		ribbon:SetAttribute("LateralDrift", 0.28 + (index % 3) * 0.11)
+		CollectionService:AddTag(ribbon, RemoteNames.RiverCurrentTag)
+	end
+
+	return swimVolume
+end
+
+-- Sunny Lake uses the same physical Terrain Water and blue palette as the
+-- adventure river, but its surface streaks drift slowly in several directions
+-- rather than suggesting one downstream current.
+local function buildSunnyLake(parent, lakeCenter)
+	local waterCenterY = SUNNY_LAKE_SURFACE_Y - SUNNY_LAKE_SIZE.Y / 2
+	local waterCFrame = CFrame.new(lakeCenter.X, waterCenterY, lakeCenter.Z)
+	fillClearMovingWater(waterCFrame, SUNNY_LAKE_SIZE)
+
+	local lake = part(
+		parent,
+		"Lake",
+		SUNNY_LAKE_SIZE + Vector3.new(0, 4, 0),
+		waterCFrame + Vector3.new(0, 1.5, 0),
+		VILLAGE.ClearWater,
+		Enum.Material.SmoothPlastic
+	)
+	lake.Transparency = 1
+	lake.CanCollide = false
+	lake.CanTouch = false
+	lake.CanQuery = false
+	lake.CastShadow = false
+	lake:SetAttribute("WaterBodyId", "SunnyLake")
+	lake:SetAttribute("SwimmableTerrainWater", true)
+	lake:SetAttribute("SurfaceY", SUNNY_LAKE_SURFACE_Y)
+	lake:SetAttribute("FlowX", 0)
+	lake:SetAttribute("FlowZ", 0)
+	lake:SetAttribute("FlowSpeed", 0)
+	lake:SetAttribute("FlowAcceleration", 0)
+	CollectionService:AddTag(lake, RemoteNames.SwimmableWaterTag)
+
+	local geometry = Instance.new("Model")
+	geometry.Name = "SunnyLakeGeometry"
+	geometry:SetAttribute("WaterStyle", "ClearBlueMovingTerrain")
+	geometry.Parent = parent
+
+	local bed = part(
+		geometry,
+		"LakeBed",
+		Vector3.new(SUNNY_LAKE_SIZE.X, 1, SUNNY_LAKE_SIZE.Z),
+		CFrame.new(lakeCenter.X, -7.5, lakeCenter.Z),
+		VILLAGE.StoneLight,
+		Enum.Material.Ground
+	)
+	bed:SetAttribute("UnderwaterDepth", 8)
+
+	local bankSpecs = {
+		{ Name = "LakeShallowBank", Size = Vector3.new(12, 1, 32), Offset = Vector3.new(-34, -1.0, 0) },
+		{ Name = "LakeShallowBank", Size = Vector3.new(12, 1, 32), Offset = Vector3.new(34, -1.0, 0) },
+		{ Name = "LakeShallowBank", Size = Vector3.new(56, 1, 12), Offset = Vector3.new(0, -1.0, -18) },
+		{ Name = "LakeShallowBank", Size = Vector3.new(56, 1, 12), Offset = Vector3.new(0, -1.0, 18) },
+		{ Name = "LakeMidBank", Size = Vector3.new(6, 1, 24), Offset = Vector3.new(-25, -3.0, 0) },
+		{ Name = "LakeMidBank", Size = Vector3.new(6, 1, 24), Offset = Vector3.new(25, -3.0, 0) },
+		{ Name = "LakeMidBank", Size = Vector3.new(44, 1, 6), Offset = Vector3.new(0, -3.0, -11) },
+		{ Name = "LakeMidBank", Size = Vector3.new(44, 1, 6), Offset = Vector3.new(0, -3.0, 11) },
+	}
+	for _, spec in ipairs(bankSpecs) do
+		local bank = part(
+			geometry,
+			spec.Name,
+			spec.Size,
+			CFrame.new(lakeCenter + spec.Offset),
+			VILLAGE.StoneLight,
+			Enum.Material.Ground
+		)
+		bank:SetAttribute("WaterEntryTier", spec.Name == "LakeShallowBank" and 1 or 2)
+	end
+
+	local rippleSpecs = {
+		{ X = -25, Z = -9, Yaw = 18, Length = 8, Phase = 0.06, Speed = 1.5, Span = 16 },
+		{ X = -12, Z = 9, Yaw = -31, Length = 11, Phase = 0.44, Speed = 1.9, Span = 18 },
+		{ X = 1, Z = -7, Yaw = 54, Length = 7, Phase = 0.77, Speed = 1.4, Span = 15 },
+		{ X = 15, Z = 8, Yaw = -12, Length = 10, Phase = 0.25, Speed = 1.7, Span = 17 },
+		{ X = 27, Z = -5, Yaw = 36, Length = 6, Phase = 0.62, Speed = 1.3, Span = 13 },
+		{ X = -20, Z = 6, Yaw = 73, Length = 9, Phase = 0.91, Speed = 1.8, Span = 14 },
+		{ X = 8, Z = 6, Yaw = -58, Length = 8, Phase = 0.35, Speed = 1.6, Span = 16 },
+		{ X = 22, Z = -10, Yaw = 9, Length = 12, Phase = 0.70, Speed = 2.0, Span = 18 },
+	}
+	for index, spec in ipairs(rippleSpecs) do
+		local ripple = part(
+			geometry,
+			"LakeSurfaceRipple",
+			Vector3.new(0.18 + (index % 3) * 0.04, 0.035, spec.Length),
+			CFrame.new(lakeCenter + Vector3.new(spec.X, SUNNY_LAKE_SURFACE_Y + 0.08, spec.Z)) * CFrame.Angles(0, math.rad(spec.Yaw), 0),
+			index % 2 == 0 and VILLAGE.ClearWaterLight or VILLAGE.ClearWater,
+			Enum.Material.Glass
+		)
+		ripple.Transparency = index % 2 == 0 and 0.66 or 0.78
+		ripple.CanCollide = false
+		ripple.CanTouch = false
+		ripple.CanQuery = false
+		ripple.CastShadow = false
+		ripple:SetAttribute("WaterBodyId", "SunnyLake")
+		ripple:SetAttribute("FlowPhase", spec.Phase)
+		ripple:SetAttribute("FlowSpeed", spec.Speed)
+		ripple:SetAttribute("FlowSpan", spec.Span)
+		ripple:SetAttribute("LateralDrift", 0.18 + (index % 3) * 0.08)
+		CollectionService:AddTag(ripple, RemoteNames.RiverCurrentTag)
+	end
+
+	return lake
+end
+
 --[[
 	A floating world label. Every one is scaled down from the size the caller
 	asks for, culled by the engine past Config.LabelFarDistance, and tagged so
 	the client can fade it in as the player walks up and switch it off entirely.
 ]]
-local function billboard(adornee, text, color, size)
+local function billboard(adornee, text, color, size, options)
+	options = options or {}
 	local requested = size or UDim2.fromOffset(180, 46)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "WorldLabel"
@@ -10685,29 +11654,37 @@ local function billboard(adornee, text, color, size)
 	)
 	gui.StudsOffset = Vector3.new(0, adornee.Size.Y / 2 + 2, 0)
 	gui.MaxDistance = Config.LabelFarDistance
+	gui:SetAttribute("AdaptiveContrast", options.AdaptiveContrast == true)
 	gui.Parent = adornee
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Text"
 	label.BackgroundColor3 = VILLAGE.CanvasLight
-	label.BackgroundTransparency = 0.08
+	label.BackgroundTransparency = options.AdaptiveContrast and 1 or 0.08
 	label.Size = UDim2.fromScale(1, 1)
-	label.Font = WildwoodStyle.Fonts.Headline
+	label.Font = options.Font or WildwoodStyle.Fonts.Headline
 	label.Text = text
 	label.TextColor3 = color or VILLAGE.TimberDark
-	label.TextScaled = true
+	label.TextScaled = not options.TextSize
+	label.TextSize = options.TextSize or 14
 	label.TextWrapped = true
+	if options.AdaptiveContrast then
+		label.TextStrokeColor3 = VILLAGE.TimberDeep
+		label.TextStrokeTransparency = 0.08
+	end
 	label.Parent = gui
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 10)
-	corner.Parent = label
+	if not options.AdaptiveContrast then
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 10)
+		corner.Parent = label
 
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = VILLAGE.TimberWarm
-	stroke.Thickness = 2
-	stroke.Transparency = 0.25
-	stroke.Parent = label
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = VILLAGE.TimberWarm
+		stroke.Thickness = 2
+		stroke.Transparency = 0.25
+		stroke.Parent = label
+	end
 
 	CollectionService:AddTag(gui, LABEL_TAG)
 	return label
@@ -10758,6 +11735,119 @@ local function carvedSignFace(sign, text, accent)
 		label.Parent = surface
 	end
 	return sign
+end
+
+-- A grounded, physical name sign for a family cottage. It sits at the
+-- front-right corner of the plot, clear of the porch path, with one centred
+-- timber post. The high-contrast Gotham lettering stays legible against the
+-- dark board even at dusk, unlike the old floating labels over the door and
+-- mailbox.
+local function homeNameSign(parent, baseCFrame)
+	-- The first version used a 13 x 4.8-stud board and a seven-stud post. This
+	-- compact revision is exactly 50% of that board size. Its shortened post
+	-- stops at the board's lower edge instead of running up behind the lettering.
+	local boardWidth, boardHeight, boardDepth = 6.5, 2.4, 0.45
+	local boardY = 4.1
+	local boardBottom = boardY - boardHeight / 2
+	local signCFrame = baseCFrame * CFrame.new(18, boardY, -19.5)
+	local post = part(
+		parent,
+		"HomeNameSignPost",
+		Vector3.new(0.675, boardBottom, 0.675),
+		baseCFrame * CFrame.new(18, boardBottom / 2, -19.5),
+		VILLAGE.TimberDark,
+		Enum.Material.Wood
+	)
+	post.CanCollide = false
+	post:SetAttribute("StopsBelowBoard", true)
+
+	local foot = part(
+		parent,
+		"HomeNameSignFoot",
+		Vector3.new(1.25, 0.4, 1.25),
+		baseCFrame * CFrame.new(18, 0.2, -19.5),
+		VILLAGE.StoneLight,
+		Enum.Material.Rock
+	)
+	foot.CanCollide = false
+
+	local board = part(
+		parent,
+		"HomeNameSignBoard",
+		Vector3.new(boardWidth, boardHeight, boardDepth),
+		signCFrame,
+		VILLAGE.TimberWarm,
+		Enum.Material.WoodPlanks
+	)
+	board.CanCollide = false
+	board:SetAttribute("HomeNameSign", true)
+	board:SetAttribute("PlotCorner", "FrontRight")
+	board:SetAttribute("ScaleFromOriginal", 0.5)
+
+	for _, y in ipairs({ -1, 1 }) do
+		local trim = part(
+			parent,
+			"HomeNameSignTrim",
+			Vector3.new(6.9, 0.21, 0.575),
+			signCFrame * CFrame.new(0, y * boardHeight / 2, 0),
+			VILLAGE.TimberDeep,
+			Enum.Material.Wood
+		)
+		trim.CanCollide = false
+	end
+	for _, x in ipairs({ -1, 1 }) do
+		local trim = part(
+			parent,
+			"HomeNameSignTrim",
+			Vector3.new(0.21, boardHeight, 0.575),
+			signCFrame * CFrame.new(x * boardWidth / 2, 0, 0),
+			VILLAGE.TimberDeep,
+			Enum.Material.Wood
+		)
+		trim.CanCollide = false
+	end
+
+	local surface = Instance.new("SurfaceGui")
+	surface.Name = "HomeNameSurface"
+	surface.Face = Enum.NormalId.Front
+	surface.LightInfluence = 0
+	surface.PixelsPerStud = 50
+	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	surface.Parent = board
+
+	local owner = Instance.new("TextLabel")
+	owner.Name = "OwnerName"
+	owner.BackgroundTransparency = 1
+	owner.Position = UDim2.fromScale(0.05, 0.1)
+	owner.Size = UDim2.fromScale(0.9, 0.6)
+	owner.Font = WildwoodStyle.Fonts.Headline
+	owner.Text = "AVAILABLE"
+	owner.TextColor3 = VILLAGE.CanvasLight
+	owner.TextScaled = true
+	owner.TextStrokeColor3 = VILLAGE.TimberDeep
+	owner.TextStrokeTransparency = 0.05
+	owner.TextWrapped = true
+	owner.Parent = surface
+
+	local sizeConstraint = Instance.new("UITextSizeConstraint")
+	sizeConstraint.MinTextSize = 12
+	sizeConstraint.MaxTextSize = 32
+	sizeConstraint.Parent = owner
+
+	local subtitle = Instance.new("TextLabel")
+	subtitle.Name = "HomeSubtitle"
+	subtitle.BackgroundTransparency = 1
+	subtitle.Position = UDim2.fromScale(0.08, 0.72)
+	subtitle.Size = UDim2.fromScale(0.84, 0.18)
+	subtitle.Font = WildwoodStyle.Fonts.Body
+	subtitle.Text = bilingual("HOME", "บ้าน")
+	subtitle.TextColor3 = VILLAGE.CanvasLight
+	subtitle.TextScaled = true
+	subtitle.TextStrokeColor3 = VILLAGE.TimberDeep
+	subtitle.TextStrokeTransparency = 0.12
+	subtitle.Parent = surface
+
+	return owner
 end
 
 local function prompt(parent, actionText, objectText)
@@ -10817,9 +11907,24 @@ end
 
 function WorldService:GetMapData(player)
 	local home = self._homeByPlayer[player]
+	local blips = {}
+	for _, source in ipairs(self._mapBlips) do
+		local blip = table.clone(source)
+		if blip.Kind == "Home" and blip.Index then
+			local record = self._homes[blip.Index]
+			if record and record.Owner then
+				blip.Name = record.Owner.DisplayName
+				blip.NameThai = record.Owner.DisplayName
+			else
+				blip.Name = "Available Home"
+				blip.NameThai = "บ้านว่าง"
+			end
+		end
+		table.insert(blips, blip)
+	end
 	return {
 		Bounds = { MinX = -300, MaxX = 300, MinZ = -300, MaxZ = 690 },
-		Blips = self._mapBlips,
+		Blips = blips,
 		HomeIndex = home and home.Index or nil,
 	}
 end
@@ -10848,6 +11953,176 @@ function WorldService:_connectPrompt(interaction, action, payload, homeIndex)
 			self:_runPrompt(player, action, payload, homeIndex)
 		end)
 	end)
+end
+
+-- Guild stations open local UI, while every resulting gameplay request still
+-- goes through GameService. The action attribute also makes each station easy
+-- to inspect in Studio without tracing event connections.
+function WorldService:_connectGuildPrompt(interaction, action)
+	interaction:SetAttribute("AdventureGuildAction", action)
+	interaction.MaxActivationDistance = 10
+	interaction.Triggered:Connect(function(player)
+		if self._remotes.GuildAction then
+			self._remotes.GuildAction:FireClient(player, action)
+		end
+	end)
+end
+
+--[[
+	Adventure Guild: the physical and functional centre of town.
+
+	Three identical station frames sit exactly 120 degrees apart around one
+	carved timber pillar. Their equal radius, canopy size and stone foundations
+	keep the silhouette balanced; distinct signs and accents make their jobs
+	obvious to children before they read either language.
+]]
+function WorldService:_buildAdventureGuild(parent)
+	local guild = Instance.new("Model")
+	guild.Name = "AdventureGuild"
+	guild:SetAttribute("TownCenter", true)
+	guild:SetAttribute("Layout", "BalancedThreeWay")
+	guild:SetAttribute("MapTravelRequiresGuild", true)
+	guild.Parent = parent
+
+	-- Low concentric steps preserve a clear approach from every direction.
+	for index, spec in ipairs({
+		{ Height = 0.8, Diameter = 26, Y = 0.4, Color = VILLAGE.Stone },
+		{ Height = 0.65, Diameter = 21, Y = 1.125, Color = VILLAGE.StoneLight },
+		{ Height = 0.45, Diameter = 16, Y = 1.675, Color = VILLAGE.Cobble },
+	}) do
+		local foundation = part(
+			guild,
+			"GuildFoundation",
+			Vector3.new(spec.Height, spec.Diameter, spec.Diameter),
+			CFrame.new(0, spec.Y, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			spec.Color,
+			Enum.Material.Rock,
+			Enum.PartType.Cylinder
+		)
+		foundation:SetAttribute("Tier", index)
+	end
+
+	local pillar = part(guild, "GuildPillar", Vector3.new(4.8, 13.5, 4.8), CFrame.new(0, 8.425, 0), VILLAGE.TimberWarm, Enum.Material.WoodPlanks)
+	pillar:SetAttribute("AdventureGuildCenter", true)
+	for _, x in ipairs({ -1, 1 }) do
+		for _, z in ipairs({ -1, 1 }) do
+			local rib = part(
+				guild,
+				"GuildPillarRib",
+				Vector3.new(0.45, 13.9, 0.45),
+				CFrame.new(x * 2.2, 8.425, z * 2.2),
+				VILLAGE.TimberDark,
+				Enum.Material.Wood
+			)
+			rib.CanCollide = false
+		end
+	end
+
+	part(guild, "GuildPillarFoot", Vector3.new(6.5, 1.1, 6.5), CFrame.new(0, 2.15, 0), VILLAGE.StoneDeep, Enum.Material.Slate)
+	part(guild, "GuildPillarCollar", Vector3.new(6.3, 0.9, 6.3), CFrame.new(0, 14.9, 0), VILLAGE.TimberDark, Enum.Material.Wood)
+	local nameBoard = part(guild, "GuildNameBoard", Vector3.new(13, 4, 0.65), CFrame.new(0, 11.7, 2.8), VILLAGE.TimberWarm, Enum.Material.WoodPlanks)
+	nameBoard.CanCollide = false
+	carvedSignFace(nameBoard, "ADVENTURE GUILD", VILLAGE.Lantern)
+	billboard(pillar, "ADVENTURE GUILD", VILLAGE.Lantern, UDim2.fromOffset(260, 54), { AdaptiveContrast = true })
+
+	-- A three-spoke crown visually ties every service back to the same centre.
+	for index = 1, 3 do
+		local angle = math.rad(90 + (index - 1) * 120)
+		local direction = Vector3.new(math.cos(angle), 0, math.sin(angle))
+		local armMiddle = direction * 4.4 + Vector3.new(0, 15.7, 0)
+		local arm = part(
+			guild,
+			"GuildCanopyArm",
+			Vector3.new(1.1, 0.8, 9.2),
+			CFrame.lookAt(armMiddle, armMiddle + direction),
+			VILLAGE.TimberDark,
+			Enum.Material.Wood
+		)
+		arm.CanCollide = false
+	end
+	local crown = part(
+		guild,
+		"GuildCrown",
+		Vector3.new(1.4, 8, 8),
+		CFrame.new(0, 16.35, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		VILLAGE.RoofTile,
+		Enum.Material.Slate,
+		Enum.PartType.Cylinder
+	)
+	crown.CanCollide = false
+	self:_hangingLantern(guild, CFrame.new(0, 19.4, 0), 34)
+
+	local stations = {
+		{
+			Id = "Quest",
+			Angle = 90,
+			Sign = "🏕️ รับภารกิจ\nQUESTS",
+			Action = bilingual("Receive quests", "รับภารกิจ"),
+			Accent = VILLAGE.Terracotta,
+		},
+		{
+			Id = "Map",
+			Angle = 210,
+			Sign = "🗺️ เปิดแผนที่\nMAP & TRAVEL",
+			Action = bilingual("Open map", "เปิดแผนที่"),
+			Accent = VILLAGE.WaterLight,
+		},
+		{
+			Id = "Animals",
+			Angle = 330,
+			Sign = "🐾 ช่วยสัตว์\nHELP ANIMALS",
+			Action = bilingual("Help animals", "ช่วยสัตว์"),
+			Accent = VILLAGE.FoliageLight,
+		},
+	}
+
+	for index, station in ipairs(stations) do
+		local angle = math.rad(station.Angle)
+		local direction = Vector3.new(math.cos(angle), 0, math.sin(angle))
+		local position = direction * 10.8
+		local outward = CFrame.lookAt(position + Vector3.new(0, 0, 0), position + direction)
+
+		local inlayMiddle = direction * 7
+		local inlay = part(
+			guild,
+			"GuildPathInlay",
+			Vector3.new(3.2, 0.16, 8.2),
+			CFrame.lookAt(inlayMiddle + Vector3.new(0, 1.97, 0), inlayMiddle + direction + Vector3.new(0, 1.97, 0)),
+			station.Accent,
+			Enum.Material.Slate
+		)
+		inlay.CanCollide = false
+		inlay:SetAttribute("Station", station.Id)
+
+		local platform = part(
+			guild,
+			"GuildStationPlatform",
+			Vector3.new(5.6, 0.55, 5.6),
+			outward + Vector3.new(0, 2.05, 0),
+			VILLAGE.StoneLight,
+			Enum.Material.Rock
+		)
+		platform:SetAttribute("Station", station.Id)
+		platform:SetAttribute("SymmetryIndex", index)
+
+		local post = part(guild, "GuildStationPost", Vector3.new(0.9, 4.2, 0.9), outward + Vector3.new(0, 4.1, 0), VILLAGE.TimberDark, Enum.Material.Wood)
+		post.CanCollide = false
+		post:SetAttribute("Station", station.Id)
+		local canopy = part(guild, "GuildStationCanopy", Vector3.new(8.2, 0.75, 4.8), outward + Vector3.new(0, 8.4, 0), VILLAGE.RoofTile, Enum.Material.Slate)
+		canopy.CanCollide = false
+		canopy:SetAttribute("Station", station.Id)
+
+		local board = part(guild, "GuildStationBoard", Vector3.new(8.4, 3.4, 0.5), outward + Vector3.new(0, 6.35, 0), VILLAGE.TimberWarm, Enum.Material.WoodPlanks)
+		board.CanCollide = false
+		board:SetAttribute("Station", station.Id)
+		board:SetAttribute("BalancedAngle", station.Angle)
+		carvedSignFace(board, station.Sign, station.Accent)
+		local guildPrompt = prompt(board, station.Action, "Adventure Guild")
+		guildPrompt.Name = "AdventureGuild" .. station.Id .. "Prompt"
+		self:_connectGuildPrompt(guildPrompt, station.Id)
+	end
+
+	return guild
 end
 
 --[[
@@ -11711,9 +12986,11 @@ function WorldService:_buildHome(index, baseCFrame)
 	local doorWindow = visual("DoorWindow", Vector3.new(2.4, 3, 0.25), base * CFrame.new(doorOffset, 5.3, -depth / 2 - 0.72), PORCH_GABLE.Window, Enum.Material.Glass)
 	doorWindow.Transparency = 0.15
 	visual("DoorHandle", Vector3.new(0.45, 0.45, 0.45), base * CFrame.new(doorOffset + 2.3, 3.7, -depth / 2 - 0.9), PORCH_GABLE.Peanut, Enum.Material.Metal, Enum.PartType.Ball)
-	local ownerLabel = billboard(door, "A cozy home", PORCH_GABLE.Peanut, UDim2.fromOffset(210, 48))
 	local doorPrompt = prompt(door, bilingual("Go to my home", "ไปบ้านของฉัน"), bilingual("Home", "บ้าน"))
-	self:_connectPrompt(doorPrompt, "Teleport", { destination = "Home" })
+	-- A cottage door is local entry, not map travel, so it remains available
+	-- independently from the central Adventure Guild warp service.
+	self:_connectPrompt(doorPrompt, "TeleportHome", {})
+	local ownerLabel = homeNameSign(home, baseCFrame)
 
 	local spawnPart = localPart("HomeSpawn", Vector3.new(5, 1, 5), Vector3.new(doorOffset, floorTop + 0.5, -24), COLORS.Mint)
 	spawnPart.Transparency = 1
@@ -11750,7 +13027,7 @@ function WorldService:_buildHome(index, baseCFrame)
 	end
 
 	local mailbox = localPart("Mailbox", Vector3.new(2, 3, 2), Vector3.new(-13, 2, -23), PORCH_GABLE.Hickory, Enum.Material.WoodPlanks)
-	billboard(mailbox, string.format("Home %d", index), PORCH_GABLE.Peanut, UDim2.fromOffset(120, 36))
+	mailbox:SetAttribute("HomeIndex", index)
 
 	-- Player paint is deliberately narrow: the six structural wall pieces and
 	-- the two main roof planes only. A BasePart colour appears on every face, so
@@ -11776,8 +13053,8 @@ function WorldService:_buildHome(index, baseCFrame)
 
 	self:_addBlip(
 		"Home",
-		string.format("Home %d", index),
-		string.format("บ้าน %d", index),
+		"Available Home",
+		"บ้านว่าง",
 		baseCFrame.Position,
 		width + 4,
 		depth + 4,
@@ -11857,7 +13134,18 @@ function WorldService:_buildAdventureWorld()
 	adventure.Parent = self._world
 	self._adventureFolder = adventure
 
-	part(adventure, "AdventureGround", Vector3.new(520, 2, 410), CFrame.new(0, -0.8, 480), ADVENTURE_COLORS.ForestGreen, Enum.Material.Grass)
+	local riverCenter = Config.Waypoints.RiverAdventure - Vector3.new(0, 4, 0)
+	-- Split the former monolithic ground into four banks around the river. A
+	-- solid floor under Terrain Water would prevent Humanoids from submerging.
+	for _, groundSpec in ipairs({
+		{ Size = Vector3.new(391, 2, 410), Position = Vector3.new(-64.5, -0.8, 480) },
+		{ Size = Vector3.new(21, 2, 410), Position = Vector3.new(249.5, -0.8, 480) },
+		{ Size = Vector3.new(108, 2, 105), Position = Vector3.new(185, -0.8, 327.5) },
+		{ Size = Vector3.new(108, 2, 205), Position = Vector3.new(185, -0.8, 582.5) },
+	}) do
+		local ground = part(adventure, "AdventureGround", groundSpec.Size, CFrame.new(groundSpec.Position), ADVENTURE_COLORS.ForestGreen, Enum.Material.Grass)
+		ground:SetAttribute("RiverChannelCutout", true)
+	end
 	part(adventure, "AdventureTrail", Vector3.new(22, 0.5, 390), CFrame.new(0, 0.3, 465), ADVENTURE_COLORS.WarmBeige, Enum.Material.Cobblestone)
 
 	local campCenter = Vector3.new(Config.Waypoints.AdventureCamp.X, 0, Config.Waypoints.AdventureCamp.Z + 25)
@@ -11869,17 +13157,7 @@ function WorldService:_buildAdventureWorld()
 	carvedSignFace(campSign, "ศูนย์ผจญภัย\nADVENTURE CAMP", ADVENTURE_COLORS.SoftYellow)
 	local upgradePrompt = prompt(campSign, bilingual("Upgrade camp", "อัปเกรดแคมป์"), bilingual("Build together", "สร้างไปด้วยกัน"))
 	self:_connectPrompt(upgradePrompt, "AdventureUpgradeCamp", {})
-	for index = 1, 8 do
-		local angle = (index / 8) * math.pi * 2
-		local stone = part(camp, "FireRing", Vector3.new(2, 1.2, 2), CFrame.new(campCenter + Vector3.new(math.cos(angle) * 5, 0.8, math.sin(angle) * 5)), VILLAGE.Stone, Enum.Material.Slate, Enum.PartType.Ball)
-		stone.CanCollide = false
-	end
-	local fire = part(camp, "Campfire", Vector3.new(4, 4, 4), CFrame.new(campCenter + Vector3.new(0, 2.3, 0)), ADVENTURE_COLORS.SunsetOrange, Enum.Material.Neon, Enum.PartType.Ball)
-	local fireLight = Instance.new("PointLight")
-	fireLight.Color = ADVENTURE_COLORS.SoftYellow
-	fireLight.Brightness = 1.2
-	fireLight.Range = 28
-	fireLight.Parent = fire
+	buildCampfire(camp, CFrame.new(campCenter), 1.15)
 	part(camp, "CampTable", Vector3.new(12, 1, 6), CFrame.new(campCenter + Vector3.new(13, 2.6, 4)), ADVENTURE_COLORS.WoodBrown, Enum.Material.WoodPlanks)
 
 	local forestCenter = Config.Waypoints.WildwoodForest - Vector3.new(0, 4, 0)
@@ -11944,17 +13222,18 @@ function WorldService:_buildAdventureWorld()
 	local mountainCrystal = self:_adventureNode(mountain, "MountainCrystal", mountainCenter + Vector3.new(10, summit.Top + 2, 0), VILLAGE.WaterLight, "Mountain", "Crystal", "Find crystal", "หาคริสตัล")
 	mountainCrystal.Material = Enum.Material.Neon
 
-	local riverCenter = Config.Waypoints.RiverAdventure - Vector3.new(0, 4, 0)
 	local river = Instance.new("Model")
 	river.Name = "RiverAndLake"
 	river.Parent = adventure
-	local water = part(river, "AdventureRiver", Vector3.new(100, 1, 96), CFrame.new(riverCenter + Vector3.new(0, 0.1, 0)), ADVENTURE_COLORS.RiverBlue, Enum.Material.Glass)
-	water.Transparency = 0.18
+	buildSwimmableRiver(river, riverCenter)
 	local riverSign = part(river, "RiverSign", Vector3.new(14, 6, 1), CFrame.new(riverCenter + Vector3.new(0, 3.5, -54)), ADVENTURE_COLORS.WoodBrown, Enum.Material.WoodPlanks)
 	riverSign.CanCollide = false
 	carvedSignFace(riverSign, "แม่น้ำและทะเลสาบ\nRIVER & LAKE", ADVENTURE_COLORS.SoftYellow)
-	for plank = -4, 4 do
+	for plank = -6, 6 do
 		part(river, "BridgePlank", Vector3.new(9, 1, 6), CFrame.new(riverCenter + Vector3.new(plank * 8, 2, 0)), ADVENTURE_COLORS.WoodBrown, Enum.Material.WoodPlanks)
+	end
+	for _, side in ipairs({ -1, 1 }) do
+		part(river, "BridgeStep", Vector3.new(7, 1.2, 6), CFrame.new(riverCenter + Vector3.new(side * 56, 0.8, 0)), ADVENTURE_COLORS.WoodBrown, Enum.Material.WoodPlanks)
 	end
 	local boat = Instance.new("Model")
 	boat.Name = "ExplorerBoat"
@@ -11962,8 +13241,8 @@ function WorldService:_buildAdventureWorld()
 	part(boat, "Hull", Vector3.new(13, 2, 7), CFrame.new(riverCenter + Vector3.new(-18, 1.6, 24)) * CFrame.Angles(0, math.rad(18), 0), ADVENTURE_COLORS.SunsetOrange, Enum.Material.WoodPlanks)
 	part(boat, "Seat", Vector3.new(5, 1, 4), CFrame.new(riverCenter + Vector3.new(-18, 3, 24)) * CFrame.Angles(0, math.rad(18), 0), ADVENTURE_COLORS.WarmBeige, Enum.Material.WoodPlanks)
 	part(boat, "Mast", Vector3.new(0.7, 10, 0.7), CFrame.new(riverCenter + Vector3.new(-18, 7, 24)), ADVENTURE_COLORS.WoodBrown, Enum.Material.Wood)
-	self:_adventureNode(river, "FishingSpot", riverCenter + Vector3.new(26, 2, -30), ADVENTURE_COLORS.RiverBlue, "RiverAdventure", "Fish", "Go fishing", "ตกปลา")
-	self:_adventureNode(river, "RiverHerbs", riverCenter + Vector3.new(-30, 2, 35), ADVENTURE_COLORS.ForestGreen, "RiverAdventure", "Herbs", "Gather river herbs", "เก็บสมุนไพรริมน้ำ")
+	self:_adventureNode(river, "FishingSpot", riverCenter + Vector3.new(58, 2, -30), ADVENTURE_COLORS.RiverBlue, "RiverAdventure", "Fish", "Go fishing", "ตกปลา")
+	self:_adventureNode(river, "RiverHerbs", riverCenter + Vector3.new(-58, 2, 35), ADVENTURE_COLORS.ForestGreen, "RiverAdventure", "Herbs", "Gather river herbs", "เก็บสมุนไพรริมน้ำ")
 
 	-- The cave is a room, not a rock wall: the crystals and the rune puzzle are
 	-- all inside, reached through a mouth in the front face.
@@ -12588,7 +13867,18 @@ function WorldService:_buildWorld()
 	self._petsFolder.Name = "Pets"
 	self._petsFolder.Parent = world
 
-	part(world, "Ground", Vector3.new(600, 2, 600), CFrame.new(0, -1, 0), COLORS.Grass, Enum.Material.Grass)
+	-- Four ground slabs leave a real cavity beneath Sunny Lake. The first keeps
+	-- the legacy Ground name because building and camera checks use it to find
+	-- the common ground height; the other three complete the shoreline.
+	for index, groundSpec in ipairs({
+		{ Size = Vector3.new(258, 2, 600), Position = Vector3.new(-171, -1, 0) },
+		{ Size = Vector3.new(258, 2, 600), Position = Vector3.new(171, -1, 0) },
+		{ Size = Vector3.new(84, 2, 448), Position = Vector3.new(0, -1, -76) },
+		{ Size = Vector3.new(84, 2, 100), Position = Vector3.new(0, -1, 250) },
+	}) do
+		local ground = part(world, index == 1 and "Ground" or "GroundBank", groundSpec.Size, CFrame.new(groundSpec.Position), COLORS.Grass, Enum.Material.Grass)
+		ground:SetAttribute("SunnyLakeCutout", true)
+	end
 	-- The old ruler-straight cross has become a soft village loop. Short angled
 	-- stretches preserve a handmade woodland silhouette and connect each district
 	-- without forcing every view through one giant intersection.
@@ -12657,14 +13947,10 @@ function WorldService:_buildWorld()
 	end
 
 	local square = part(world, "TownPlaza", Vector3.new(72, 1, 72), CFrame.new(0, 0.45, 0), VILLAGE.Cobble, Enum.Material.Cobblestone)
-	square:SetAttribute("DistrictName", "Guild Square")
+	square:SetAttribute("DistrictName", "Adventure Guild")
 	square:SetAttribute("LayoutStyle", "OrganicVillageLoop")
-	local fountainBase = part(world, "Fountain", Vector3.new(22, 3, 22), CFrame.new(0, 1.5, 0), VILLAGE.Stone, Enum.Material.Rock, Enum.PartType.Cylinder)
-	fountainBase.CFrame = CFrame.new(0, 1.5, 0) * CFrame.Angles(0, 0, math.rad(90))
-	local fountainTop = part(world, "FountainTop", Vector3.new(5, 8, 5), CFrame.new(0, 5, 0), VILLAGE.StoneLight, Enum.Material.Rock, Enum.PartType.Cylinder)
-	fountainTop.CFrame = CFrame.new(0, 5, 0) * CFrame.Angles(0, 0, math.rad(90))
-	billboard(fountainTop, "WILDWOOD GUILD SQUARE", VILLAGE.TimberDark, UDim2.fromOffset(280, 56))
-	-- Lantern posts around the fountain: the plaza in the reference is ringed with them.
+	self:_buildAdventureGuild(world)
+	-- Six lantern posts frame the three-way Guild without favouring one station.
 	local plazaLightPoints = {}
 	for index = 1, 6 do
 		local angle = (index / 6) * math.pi * 2
@@ -12739,8 +14025,8 @@ function WorldService:_buildWorld()
 		part(school, "Desk", Vector3.new(6, 3, 4), schoolBase * CFrame.new(column, 1.5, -1 + row * 7), COLORS.Cream, Enum.Material.WoodPlanks)
 	end
 
-	local lake = part(world, "Lake", Vector3.new(80, 1, 45), CFrame.new(Config.Waypoints.Lake.X, 0.2, Config.Waypoints.Lake.Z), COLORS.Water, Enum.Material.Glass)
-	lake.Transparency = 0.18
+	local lakeCenter = Config.Waypoints.Lake - Vector3.new(0, 4, 0)
+	local lake = buildSunnyLake(world, lakeCenter)
 	billboard(lake, "SUNNY LAKE", VILLAGE.Water, UDim2.fromOffset(170, 42))
 	part(world, "Beach", Vector3.new(65, 1, 95), CFrame.new(Config.Waypoints.Beach.X, 0.2, Config.Waypoints.Beach.Z), VILLAGE.Plaster, Enum.Material.Sand)
 
@@ -12766,7 +14052,7 @@ function WorldService:_buildWorld()
 	self:_addBlip("Road", "West Home Grove", "หมู่บ้านฝั่งตะวันตก", Vector3.new(-145, 0, 3), 16, 176, VILLAGE.Cobble)
 	self:_addBlip("Road", "East Home Grove", "หมู่บ้านฝั่งตะวันออก", Vector3.new(145, 0, 3), 16, 176, VILLAGE.Cobble)
 	self:_addBlip("Road", "Wildwood Trail", "ทางป่าไวลด์วูด", Vector3.new(0, 0, 465), 22, 390, VILLAGE.Cobble)
-	self:_addBlip("Area", "Guild Square", "ลานกิลด์", Vector3.new(0, 0, 0), 72, 72, VILLAGE.StoneLight)
+	self:_addBlip("Area", "Adventure Guild", "กิลด์ผจญภัย", Vector3.new(0, 0, 0), 72, 72, VILLAGE.StoneLight)
 	self:_addBlip("Area", "Sunny Lake", "ทะเลสาบ", Config.Waypoints.Lake, 80, 45, COLORS.Water)
 	self:_addBlip("Area", "Beach", "ชายหาด", Config.Waypoints.Beach, 65, 95, VILLAGE.Plaster)
 	self:_addBlip("Area", "Park", "สวนสาธารณะ", Config.Waypoints.Park, 90, 70, COLORS.Grass)
@@ -12807,7 +14093,7 @@ function WorldService:AssignHome(player)
 		if not record.Owner then
 			record.Owner = player
 			record.Model:SetAttribute("OwnerUserId", player.UserId)
-			record.OwnerLabel.Text = string.format("%s's cozy home", player.DisplayName)
+			record.OwnerLabel.Text = player.DisplayName
 			player:SetAttribute("HomeIndex", record.Index)
 			self._homeByPlayer[player] = record
 			return record
@@ -12822,7 +14108,7 @@ function WorldService:ReleaseHome(player)
 	if record then
 		record.Owner = nil
 		record.Model:SetAttribute("OwnerUserId", 0)
-		record.OwnerLabel.Text = "A cozy home"
+		record.OwnerLabel.Text = "AVAILABLE"
 		self:_applyHomePaint(record, Config.DefaultHomeColor)
 		record.FurnitureFolder:ClearAllChildren()
 		record.AdventureCampFolder:ClearAllChildren()
@@ -13098,13 +14384,7 @@ function WorldService:RefreshAdventureCamp(player, data)
 	local camp = home.BaseCFrame * CFrame.new(-34, 0, 5)
 	local level = data.Adventure.CampLevel
 
-	for index = 1, 6 do
-		local angle = (index / 6) * math.pi * 2
-		local rock = part(folder, "CampStone", Vector3.new(1.2, 0.8, 1.2), camp * CFrame.new(math.cos(angle) * 2.4, 0.6, math.sin(angle) * 2.4), VILLAGE.Stone, Enum.Material.Slate, Enum.PartType.Ball)
-		rock.CanCollide = false
-	end
-	local flame = part(folder, "CampFlame", Vector3.new(2, 2.5, 2), camp * CFrame.new(0, 1.8, 0), ADVENTURE_COLORS.SunsetOrange, Enum.Material.Neon, Enum.PartType.Ball)
-	flame.CanCollide = false
+	buildCampfire(folder, camp, 0.88)
 	part(folder, "CampTable", Vector3.new(12, 1, 6), camp * CFrame.new(0, 2.6, 12), ADVENTURE_COLORS.WoodBrown, Enum.Material.WoodPlanks)
 
 	if level >= 2 then
@@ -13491,7 +14771,11 @@ function WorldService:_createPet(player)
 	local root = part(self._petsFolder, "BodyRoot", scaled(Vector3.new(3.5, 3, 4.5)), CFrame.new(0, -100, 0), WildwoodStyle.Pets.Cat.Main, Enum.Material.SmoothPlastic, Enum.PartType.Ball)
 	root.CanCollide = false
 	local pet = modelWithPrimary(string.format("%s_Pet", player.Name), self._petsFolder, root)
-	billboard(root, "Mochi", STYLE.DarkEarth, UDim2.fromOffset(110, 32))
+	billboard(root, bilingual("Mochi", "โมจิ"), STYLE.DarkEarth, UDim2.fromOffset(190, 40), {
+		AdaptiveContrast = true,
+		Font = WildwoodStyle.Fonts.Body,
+		TextSize = 16,
+	})
 	self:_buildCompanionGeometry(pet, "Cat", petScale)
 	pet:SetAttribute("CelebrateUntil", 0)
 	pet:SetAttribute("CharacterHeight", characterHeight)
@@ -13525,7 +14809,9 @@ function WorldService:RefreshPet(player, data)
 	local labelGui = root and root:FindFirstChild("WorldLabel")
 	local label = labelGui and labelGui:FindFirstChild("Text")
 	if label then
-		label.Text = string.format("%s / %s  Lv.%d", companion.DisplayNameThai, companion.DisplayName, data.Pet.Level)
+		label.Text = companionId == "Cat"
+			and bilingual(data.Pet.Name or "Mochi", "โมจิ")
+			or bilingual(companion.DisplayName, companion.DisplayNameThai)
 	end
 end
 

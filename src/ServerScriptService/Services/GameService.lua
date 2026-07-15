@@ -298,6 +298,13 @@ function GameService:_isNearWaypoint(player, waypointId, maximumDistance)
 	return root ~= nil and target ~= nil and (root.Position - target).Magnitude <= maximumDistance
 end
 
+function GameService:_isNearAdventureGuild(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	return root ~= nil
+		and (root.CFrame.Position - Config.AdventureGuildCenter).Magnitude <= Config.AdventureGuildTravelRadius
+end
+
 function GameService:_levelPet(pet)
 	while pet.XP >= pet.Level * 25 do
 		pet.XP -= pet.Level * 25
@@ -986,6 +993,12 @@ function GameService:_handleAction(player, action, payload)
 		)
 	elseif action == "Teleport" then
 		local destination = payload.destination
+		if not self:_isNearAdventureGuild(player) then
+			return false, bilingualMessage(
+				"Travel from the map station at the Adventure Guild in the town centre.",
+				"เดินทางได้ที่จุดแผนที่ของ Adventure Guild ตรงกลางเมือง"
+			)
+		end
 		if destination == "Home" then
 			self._world:TeleportHome(player)
 		elseif type(destination) == "string" and Config.Waypoints[destination] then
@@ -994,6 +1007,9 @@ function GameService:_handleAction(player, action, payload)
 			return false, "That place is not on your map."
 		end
 		return true, string.format("Welcome to %s!", destination)
+	elseif action == "TeleportHome" then
+		self._world:TeleportHome(player)
+		return true, bilingualMessage("Welcome home!", "ยินดีต้อนรับกลับบ้าน!")
 	elseif action == "FinishOnboarding" then
 		data.Settings.Onboarded = true
 		self:_progressQuest(player, "FinishOnboarding", 1)

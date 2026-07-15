@@ -80,6 +80,7 @@ def main() -> int:
 
     controller = (ROOT / "src/StarterPlayer/StarterPlayerScripts/UI/EnvironmentController.lua").read_text(encoding="utf-8")
     navigator = (ROOT / "src/StarterPlayer/StarterPlayerScripts/UI/QuestNavigator.lua").read_text(encoding="utf-8")
+    adaptive = (ROOT / "src/ReplicatedStorage/Shared/AdaptiveWorldText.lua").read_text(encoding="utf-8")
     board = (ROOT / "src/StarterPlayer/StarterPlayerScripts/UI/QuestBoard.lua").read_text(encoding="utf-8")
     client = (ROOT / "src/StarterPlayer/StarterPlayerScripts/Client.client.lua").read_text(encoding="utf-8")
     world = (ROOT / "src/ServerScriptService/Services/WorldService.lua").read_text(encoding="utf-8")
@@ -105,6 +106,10 @@ def main() -> int:
         "QuestGuide.get(self._action)",
         "OwnerUserId",
         "GardenSlot",
+        'billboard.Size = UDim2.fromOffset(190, 52)',
+        'theme.Fonts.Body, 16',
+        'markerText.BackgroundTransparency = 1',
+        'AdaptiveWorldText.update(',
     ):
         if required not in navigator:
             failures.append(f"quest navigator is missing {required}")
@@ -112,17 +117,52 @@ def main() -> int:
         if removed in navigator:
             failures.append(f"old screen-arrow navigation remains: {removed}")
     for required in (
-        "trailPart.Transparency = 0.43",
-        "self._column.Transparency = visible and 0.62 or 1",
+        "NAVIGATION_SOFTNESS = 0.5",
+        "TRAIL_WIDTH = TRAIL_BASE_WIDTH * NAVIGATION_SOFTNESS",
+        "TRAIL_DASH_LENGTH = 3.2",
+        "TRAIL_GAP_LENGTH = 2.8",
+        "TRAIL_PERIOD = TRAIL_DASH_LENGTH + TRAIL_GAP_LENGTH",
+        "TRAIL_OPACITY = 0.57 * NAVIGATION_SOFTNESS",
+        "theme.Colors.Sun:Lerp(theme.Colors.Surface, NAVIGATION_SOFTNESS)",
+        "navigationLight.Brightness = 0.75 * NAVIGATION_SOFTNESS",
+        "self._column.Transparency = visible and 1 - COLUMN_OPACITY or 1",
+        "trailPart.Size = Vector3.new(TRAIL_WIDTH, 0.06, length)",
+        "trailPart.Transparency = 1 - TRAIL_OPACITY",
+        "local fromDistance = (index - 1) * actualPeriod",
+        "local toDistance = math.min(fromDistance + dashLength, distance)",
         "distance <= ARRIVAL_DISTANCE",
         "self:_setNavigationVisible(false)",
     ):
         if required not in navigator:
             failures.append(f"ground-path arrival behavior is missing {required}")
+    for continuous in (
+        "TRAIL_SEGMENT_LENGTH",
+        "startPosition:Lerp(self._target",
+        "length + 0.18",
+    ):
+        if continuous in navigator:
+            failures.append(f"continuous navigation line remains: {continuous}")
     if "SHOW GROUND PATH" not in board or 'self:_navigateButton(card, "Daily")' not in board or 'self:_navigateButton(row, "Chain")' not in board:
         failures.append("quest board does not expose ground-path buttons for both daily and chain quests")
     if "EnvironmentController.new()" not in client or "QuestNavigator.new" not in client or "questNavigator:Update(state)" not in client:
         failures.append("client does not start and update the new controllers")
+    for required in (
+        'Adaptive = labelGui:GetAttribute("AdaptiveContrast") == true',
+        'AdaptiveWorldText.update(parts.Text, camera, labelPosition',
+        'parts.Text.BackgroundTransparency = 1',
+    ):
+        if required not in client:
+            failures.append(f"client adaptive world-label controller is missing {required}")
+    for required in (
+        "workspace:Raycast",
+        "function AdaptiveWorldText.textFor(background)",
+        "function AdaptiveWorldText.backdropAt(camera, worldPosition, exclusions)",
+        "AdaptiveWorldText.LightText",
+        "AdaptiveWorldText.DarkText",
+        "MeasuredContrast",
+    ):
+        if required not in adaptive:
+            failures.append(f"adaptive world text is missing {required}")
     if "Lighting.ClockTime = 16.6" in world:
         failures.append("fixed late-afternoon lighting is still active")
     if "CollectionService:AddTag(lightPart, RemoteNames.LampTag)" not in world:

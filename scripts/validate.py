@@ -38,6 +38,7 @@ REQUIRED = [
     "src/StarterPlayer/StarterPlayerScripts/UI/HomePalette.lua",
     "src/StarterPlayer/StarterPlayerScripts/UI/Iconography.lua",
     "src/StarterPlayer/StarterPlayerScripts/UI/QuestNavigator.lua",
+    "src/StarterPlayer/StarterPlayerScripts/UI/RiverController.lua",
     "src/StarterPlayer/StarterPlayerScripts/UI/Theme.lua",
 ]
 

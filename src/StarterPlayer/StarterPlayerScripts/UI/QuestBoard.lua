@@ -1,8 +1,8 @@
 --[[
 	Quest board.
 
-	Stays at the upper-left in both states: a compact header while hidden and the
-	same large reading size while open. It never jumps into the screen centre. It
+	Stays at the upper-left in both states: a compact header while hidden and a
+	half-size scrolling window while open. It never jumps into the screen centre. It
 	shows the daily quest, then the chain the player is
 	working through: every step in order, which one is live, and what each pays.
 
@@ -62,8 +62,9 @@ function QuestBoard.new(parent, theme, components, catalog, config, bilingual, o
 
 	local questIcon = Iconography.create(header, "Quest", theme.Colors.Primary, 32)
 	questIcon.Position = UDim2.fromOffset(14, 13)
+	self._questIcon = questIcon
 
-	local title = components.label(header, bilingual("QUESTS", "ภารกิจ"), UDim2.new(1, -160, 1, 0), UDim2.fromOffset(54, 0), 15, true)
+	local title = components.label(header, bilingual("QUESTS", "ภารกิจ"), UDim2.new(1, -160, 1, 0), UDim2.fromOffset(54, 0), QuestBoardLayout.HEADER_TEXT_SIZE, true)
 	title.TextColor3 = theme.Colors.Ink
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	self._title = title
@@ -77,7 +78,7 @@ function QuestBoard.new(parent, theme, components, catalog, config, bilingual, o
 	toggle.Font = Enum.Font.GothamBold
 	toggle.Text = bilingual("OPEN", "เปิด")
 	toggle.TextColor3 = theme.Colors.Ink
-	toggle.TextSize = 13
+	toggle.TextSize = QuestBoardLayout.TOGGLE_TEXT_SIZE
 	toggle.Parent = header
 	components.corner(toggle, theme.SmallCorner)
 	components.stroke(toggle, theme.Colors.Border, 1)
@@ -90,10 +91,10 @@ function QuestBoard.new(parent, theme, components, catalog, config, bilingual, o
 	body.BackgroundTransparency = 1
 	body.BorderSizePixel = 0
 	body.CanvasSize = UDim2.fromOffset(0, 0)
-	body.Position = UDim2.fromOffset(12, CLOSED_HEIGHT)
+	body.Position = UDim2.fromOffset(QuestBoardLayout.BODY_PADDING, CLOSED_HEIGHT)
 	body.ScrollBarImageColor3 = theme.Colors.Water
 	body.ScrollBarThickness = 7
-	body.Size = UDim2.new(1, -24, 1, -CLOSED_HEIGHT - 12)
+	body.Size = UDim2.new(1, -QuestBoardLayout.BODY_PADDING * 2, 1, -CLOSED_HEIGHT - QuestBoardLayout.BODY_PADDING)
 	body.Visible = false
 	body.Parent = panel
 	self._body = body
@@ -117,6 +118,28 @@ function QuestBoard:_layout(animate)
 	end
 	local geometry = self._open and QuestBoardLayout.open(screen.X, screen.Y)
 		or QuestBoardLayout.closed(screen.X, screen.Y)
+	local headerHeight = self._open and QuestBoardLayout.OPEN_HEADER_HEIGHT or CLOSED_HEIGHT
+	local compactHeader = self._open and geometry.Width < 260
+	self._header.Size = UDim2.new(1, 0, 0, headerHeight)
+	self._body.Position = UDim2.fromOffset(QuestBoardLayout.BODY_PADDING, headerHeight)
+	self._body.Size = UDim2.new(
+		1,
+		-QuestBoardLayout.BODY_PADDING * 2,
+		1,
+		-headerHeight - QuestBoardLayout.BODY_PADDING
+	)
+	self._questIcon.Visible = not compactHeader
+	if compactHeader then
+		self._title.Position = UDim2.fromOffset(8, 0)
+		self._title.Size = UDim2.new(1, -72, 1, 0)
+		self._toggle.Position = UDim2.new(1, -6, 0.5, 0)
+		self._toggle.Size = UDim2.fromOffset(56, 34)
+	else
+		self._title.Position = UDim2.fromOffset(54, 0)
+		self._title.Size = UDim2.new(1, -160, 1, 0)
+		self._toggle.Position = UDim2.new(1, -12, 0.5, 0)
+		self._toggle.Size = UDim2.fromOffset(92, 42)
+	end
 	local properties = {
 		Position = UDim2.fromOffset(geometry.X, geometry.Y),
 		Size = UDim2.fromOffset(geometry.Width, geometry.Height),
@@ -170,7 +193,7 @@ function QuestBoard:_text(parent, text, size, bold, color)
 	label.Size = UDim2.new(1, 0, 0, 0)
 	label.Text = text
 	label.TextColor3 = color or self._theme.Colors.Ink
-	label.TextSize = size or 14
+	label.TextSize = size or QuestBoardLayout.BODY_TEXT_SIZE
 	label.TextWrapped = true
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = parent
@@ -206,7 +229,7 @@ function QuestBoard:_navigateButton(parent, kind)
 	button.Size = UDim2.new(1, 0, 0, 50)
 	button.Text = self._bilingual("SHOW GROUND PATH", "แสดงเส้นทางบนพื้น")
 	button.TextColor3 = self._theme.textOn(button.BackgroundColor3)
-	button.TextSize = 13
+	button.TextSize = QuestBoardLayout.BUTTON_TEXT_SIZE
 	button.TextWrapped = true
 	button.Parent = parent
 	self._components.corner(button, self._theme.SmallCorner)
@@ -243,7 +266,7 @@ function QuestBoard:_requirementRow(parent, item, order)
 	tile.Size = UDim2.fromOffset(34, 34)
 	tile.Text = item.Icon
 	tile.TextColor3 = theme.textOn(item.Color)
-	tile.TextSize = 20
+	tile.TextSize = 22
 	tile.Parent = row
 	self._components.corner(tile, UDim.new(0, 8))
 
@@ -254,7 +277,7 @@ function QuestBoard:_requirementRow(parent, item, order)
 	name.Size = UDim2.new(1, -126, 1, 0)
 	name.Text = self._bilingual(item.Name, item.NameThai)
 	name.TextColor3 = theme.Colors.Ink
-	name.TextSize = 12
+	name.TextSize = QuestBoardLayout.SMALL_TEXT_SIZE
 	name.TextXAlignment = Enum.TextXAlignment.Left
 	name.Parent = row
 
@@ -270,7 +293,7 @@ function QuestBoard:_requirementRow(parent, item, order)
 		and string.format("%d / %d  ✓", item.Have, item.Need)
 		or string.format("%d / %d", item.Have, item.Need)
 	count.TextColor3 = item.Met and theme.Colors.Primary or theme.Colors.Ink
-	count.TextSize = 13
+	count.TextSize = QuestBoardLayout.BUTTON_TEXT_SIZE
 	count.TextXAlignment = Enum.TextXAlignment.Right
 	count.Parent = row
 
@@ -298,7 +321,7 @@ function QuestBoard:_campRequirements(card, state, order)
 	self:_text(card, self._bilingual(
 		string.format("Bring these to build the %s:", plan.Name),
 		string.format("เก็บของเหล่านี้เพื่อสร้าง%s:", plan.NameThai)
-	), 13, true, theme.Colors.Muted).LayoutOrder = order
+	), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted).LayoutOrder = order
 
 	local list = Instance.new("Frame")
 	list.AutomaticSize = Enum.AutomaticSize.Y
@@ -322,7 +345,7 @@ function QuestBoard:_campRequirements(card, state, order)
 			self:_text(card, self._bilingual(
 				string.format("Find %s in the %s.", item.Name, item.FoundIn),
 				string.format("หา%sได้ที่%s", item.NameThai, item.FoundInThai)
-			), 12, false, theme.Colors.Muted).LayoutOrder = order + 2
+			), QuestBoardLayout.SMALL_TEXT_SIZE, false, theme.Colors.Muted).LayoutOrder = order + 2
 			break
 		end
 	end
@@ -331,7 +354,7 @@ function QuestBoard:_campRequirements(card, state, order)
 		self:_text(card, self._bilingual(
 			"You have everything! Open Adventure and build it.",
 			"คุณมีของครบแล้ว! เปิดเมนูผจญภัยแล้วสร้างได้เลย"
-		), 13, true, theme.Colors.Primary).LayoutOrder = order + 3
+		), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Primary).LayoutOrder = order + 3
 	end
 end
 
@@ -361,7 +384,7 @@ function QuestBoard:Update(state)
 		self:_text(chest, self._bilingual(
 			string.format("A %d coin chest is waiting!", quests.PendingBonus),
 			string.format("หีบรางวัล %d เหรียญรออยู่!", quests.PendingBonus)
-		), 16, true)
+		), QuestBoardLayout.PROMINENT_TEXT_SIZE, true)
 
 		local claim = Instance.new("TextButton")
 		claim.AutoButtonColor = false
@@ -370,7 +393,7 @@ function QuestBoard:Update(state)
 		claim.Size = UDim2.new(1, 0, 0, theme.TouchHeight)
 		claim.Text = self._bilingual("OPEN THE CHEST", "เปิดหีบรางวัล")
 		claim.TextColor3 = theme.textOn(theme.Colors.Leaf)
-		claim.TextSize = 16
+		claim.TextSize = QuestBoardLayout.PROMINENT_TEXT_SIZE
 		claim.Parent = chest
 		self._components.corner(claim, theme.SmallCorner)
 		claim.Activated:Connect(function()
@@ -382,12 +405,12 @@ function QuestBoard:Update(state)
 	local daily = state.Daily and state.Daily.Quest
 	if daily then
 		local card = self:_card()
-		self:_text(card, self._bilingual("TODAY", "วันนี้"), 13, true, theme.Colors.Muted)
-		self:_text(card, self._bilingual(daily.Description, daily.DescriptionThai or daily.Description), 16, true)
+		self:_text(card, self._bilingual("TODAY", "วันนี้"), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted)
+		self:_text(card, self._bilingual(daily.Description, daily.DescriptionThai or daily.Description), QuestBoardLayout.PROMINENT_TEXT_SIZE, true)
 		self:_bar(card, (daily.Progress or 0) / math.max(daily.Target or 1, 1), theme.Colors.Water)
 		self:_text(card, daily.Completed
 			and self._bilingual("Done!", "สำเร็จแล้ว!")
-			or string.format("%d / %d", daily.Progress or 0, daily.Target or 1), 13, false, theme.Colors.Muted)
+			or string.format("%d / %d", daily.Progress or 0, daily.Target or 1), QuestBoardLayout.SECTION_TEXT_SIZE, false, theme.Colors.Muted)
 		if not daily.Completed then
 			self:_navigateButton(card, "Daily")
 		end
@@ -396,11 +419,11 @@ function QuestBoard:Update(state)
 	local chain = self._catalog.QuestChains[quests.ChainIndex]
 	if not chain then
 		local done = self:_card(theme.Colors.Leaf)
-		self:_text(done, self._bilingual("The Wildwood story is complete!", "เรื่องราวแห่งไวลด์วูดสำเร็จแล้ว!"), 16, true, theme.Colors.White)
+		self:_text(done, self._bilingual("The Wildwood story is complete!", "เรื่องราวแห่งไวลด์วูดสำเร็จแล้ว!"), QuestBoardLayout.PROMINENT_TEXT_SIZE, true, theme.Colors.White)
 		self:_text(done, self._bilingual(
 			string.format("You earned %d coins from quests.", quests.TotalEarned or 0),
 			string.format("คุณได้รับ %d เหรียญจากภารกิจ", quests.TotalEarned or 0)
-		), 14, false, theme.Colors.White)
+		), QuestBoardLayout.BODY_TEXT_SIZE, false, theme.Colors.White)
 		return
 	end
 
@@ -408,9 +431,9 @@ function QuestBoard:Update(state)
 	self:_text(card, self._bilingual(
 		string.format("CHAPTER %d OF %d", quests.ChainIndex, #self._catalog.QuestChains),
 		string.format("บทที่ %d จาก %d", quests.ChainIndex, #self._catalog.QuestChains)
-	), 13, true, theme.Colors.Muted)
-	self:_text(card, self._bilingual(chain.Name, chain.NameThai), 18, true, theme.Colors.PrimaryDark)
-	self:_text(card, self._bilingual(chain.Blurb, chain.BlurbThai), 14, false, theme.Colors.Muted)
+	), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted)
+	self:_text(card, self._bilingual(chain.Name, chain.NameThai), QuestBoardLayout.TITLE_TEXT_SIZE, true, theme.Colors.PrimaryDark)
+	self:_text(card, self._bilingual(chain.Blurb, chain.BlurbThai), QuestBoardLayout.BODY_TEXT_SIZE, false, theme.Colors.Muted)
 
 	-- Every step, so the player can see what is coming and what it pays.
 	for index, step in ipairs(chain.Steps) do
@@ -437,20 +460,20 @@ function QuestBoard:Update(state)
 
 		local mark = done and "[x]" or (active and "[>]" or "[ ]")
 		local tone = done and theme.Colors.Leaf or (active and theme.Colors.Ink or theme.Colors.Muted)
-		self:_text(row, string.format("%s  %s", mark, self._bilingual(step.Description, step.DescriptionThai)), 15, active, tone)
+		self:_text(row, string.format("%s  %s", mark, self._bilingual(step.Description, step.DescriptionThai)), QuestBoardLayout.STEP_TEXT_SIZE, active, tone)
 		self:_text(row, self._bilingual(
 			string.format("Reward %d coins", step.Reward),
 			string.format("รางวัล %d เหรียญ", step.Reward)
-		), 13, false, theme.Colors.Muted)
+		), QuestBoardLayout.SECTION_TEXT_SIZE, false, theme.Colors.Muted)
 
 		if active then
 			self:_bar(row, (quests.Progress or 0) / math.max(step.Target, 1), theme.Colors.Leaf)
-			self:_text(row, string.format("%d / %d", quests.Progress or 0, step.Target), 13, true, theme.Colors.Muted)
+			self:_text(row, string.format("%d / %d", quests.Progress or 0, step.Target), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted)
 			if step.Hint then
 				self:_text(row, self._bilingual(
 					string.format("TIP: %s", step.Hint),
 					string.format("คำใบ้: %s", step.HintThai or step.Hint)
-				), 13, false, theme.Colors.PrimaryDark)
+				), QuestBoardLayout.SECTION_TEXT_SIZE, false, theme.Colors.PrimaryDark)
 			end
 			self:_navigateButton(row, "Chain")
 			-- "Upgrade your camp" is the one step whose work happens somewhere else
@@ -466,11 +489,11 @@ function QuestBoard:Update(state)
 	self:_text(prize, self._bilingual(
 		string.format("Finish the chapter: %d coin chest", chain.Bonus),
 		string.format("จบบท: หีบรางวัล %d เหรียญ", chain.Bonus)
-	), 15, true, theme.Colors.PrimaryDark)
+	), QuestBoardLayout.STEP_TEXT_SIZE, true, theme.Colors.PrimaryDark)
 	self:_text(prize, self._bilingual(
 		string.format("Earned from quests so far: %d coins", quests.TotalEarned or 0),
 		string.format("ได้รับจากภารกิจแล้ว: %d เหรียญ", quests.TotalEarned or 0)
-	), 13, false, theme.Colors.Muted)
+	), QuestBoardLayout.SECTION_TEXT_SIZE, false, theme.Colors.Muted)
 
 	self:_shop(state)
 end
@@ -499,7 +522,7 @@ function QuestBoard:_shop(state)
 	end
 
 	local card = self:_card(theme.Colors.White)
-	self:_text(card, self._bilingual("COIN SHOP", "ร้านค้าเหรียญ"), 13, true, theme.Colors.Muted)
+	self:_text(card, self._bilingual("COIN SHOP", "ร้านค้าเหรียญ"), QuestBoardLayout.SECTION_TEXT_SIZE, true, theme.Colors.Muted)
 
 	for index, pack in ipairs(packs) do
 		local button = Instance.new("TextButton")
@@ -513,7 +536,7 @@ function QuestBoard:_shop(state)
 			string.format("%s  +%d เหรียญ  -  R$%d", pack.NameThai, pack.Coins, pack.Robux)
 		)
 		button.TextColor3 = theme.Colors.Ink
-		button.TextSize = 13
+		button.TextSize = QuestBoardLayout.BUTTON_TEXT_SIZE
 		button.TextWrapped = true
 		button.Parent = card
 		self._components.corner(button, theme.SmallCorner)
@@ -540,7 +563,7 @@ function QuestBoard:_shop(state)
 				string.format("%s  -  R$%d", monetization.SupporterNameThai, monetization.SupporterRobux)
 			)
 		pass.TextColor3 = theme.textOn(pass.BackgroundColor3)
-		pass.TextSize = 13
+		pass.TextSize = QuestBoardLayout.BUTTON_TEXT_SIZE
 		pass.TextWrapped = true
 		pass.Parent = card
 		self._components.corner(pass, theme.SmallCorner)
@@ -554,7 +577,7 @@ function QuestBoard:_shop(state)
 	self:_text(card, self._bilingual(
 		"Coins buy furniture and seeds. Quests are always earned, never bought.",
 		"เหรียญใช้ซื้อเฟอร์นิเจอร์และเมล็ดพันธุ์ ภารกิจต้องทำเองเสมอ"
-	), 12, false, theme.Colors.Muted)
+	), QuestBoardLayout.SMALL_TEXT_SIZE, false, theme.Colors.Muted)
 end
 
 return QuestBoard

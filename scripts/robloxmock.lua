@@ -607,6 +607,7 @@ function M.exportParts()
 				path = fullName(object),
 				name = props.Name,
 				canCollide = props.CanCollide and 1 or 0,
+				transparency = props.Transparency or 0,
 				shape = (props.Shape and props.Shape.Name) or "Block",
 				material = (props.Material and props.Material.Name) or "Plastic",
 				r = math.floor(color.R * 255 + 0.5),
@@ -617,6 +618,40 @@ function M.exportParts()
 				xx = c.xa.X, xy = c.xa.Y, xz = c.xa.Z,
 				yx = c.ya.X, yy = c.ya.Y, yz = c.ya.Z,
 				zx = c.za.X, zy = c.za.Y, zz = c.za.Z,
+			})
+		end
+	end
+	return rows
+end
+
+-- Exposes the physical cottage signs and their rendered lettering to the
+-- offline regression suite. This deliberately exports only the small public
+-- contract the tests need instead of leaking the mock's internal object graph.
+function M.exportHomeSigns()
+	local rows = {}
+	for _, object in ipairs(WORLD_PARTS) do
+		local props = rawget(object, "_props")
+		if not props.Destroyed and props.Parent ~= nil and props.Name == "HomeNameSignBoard" then
+			local surface = object:FindFirstChild("HomeNameSurface")
+			local owner = surface and surface:FindFirstChild("OwnerName")
+			local subtitle = surface and surface:FindFirstChild("HomeSubtitle")
+			local ownerColor = owner and owner.TextColor3 or Color3.new()
+			local strokeColor = owner and owner.TextStrokeColor3 or Color3.new()
+			table.insert(rows, {
+				path = fullName(object),
+				corner = object:GetAttribute("PlotCorner") or "",
+				ownerText = owner and owner.Text or "",
+				ownerFont = owner and owner.Font and owner.Font.Name or "",
+				subtitleText = subtitle and subtitle.Text or "",
+				subtitleFont = subtitle and subtitle.Font and subtitle.Font.Name or "",
+				pixelsPerStud = surface and surface.PixelsPerStud or 0,
+				lightInfluence = surface and surface.LightInfluence or 1,
+				textR = math.floor(ownerColor.R * 255 + 0.5),
+				textG = math.floor(ownerColor.G * 255 + 0.5),
+				textB = math.floor(ownerColor.B * 255 + 0.5),
+				strokeR = math.floor(strokeColor.R * 255 + 0.5),
+				strokeG = math.floor(strokeColor.G * 255 + 0.5),
+				strokeB = math.floor(strokeColor.B * 255 + 0.5),
 			})
 		end
 	end

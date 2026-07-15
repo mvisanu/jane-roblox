@@ -22,6 +22,10 @@ local Config = {
 	CharacterReferenceHeight = 5,
 	PetHeightRatio = 0.25,
 	RequestCooldown = 0.12,
+	-- Map travel is a physical town service: players must stand at the central
+	-- Adventure Guild before the server accepts a destination request.
+	AdventureGuildCenter = Vector3.new(0, 4, 0),
+	AdventureGuildTravelRadius = 24,
 	AdventureCollectCooldown = 8,
 	AdventurePuzzleReward = 150,
 	-- World labels are readable up close and fade out as you walk away, so the
@@ -105,7 +109,7 @@ Config.AdventurePalette = {
 	WarmBeige = WildwoodStyle.World.Plaster,
 	SunsetOrange = WildwoodStyle.World.Terracotta,
 	SoftYellow = WildwoodStyle.World.Window,
-	RiverBlue = WildwoodStyle.World.Water,
+	RiverBlue = WildwoodStyle.World.ClearWater,
 }
 
 -- Direct-select cottage swatches resampled from approved Bakery Bay concept A.
@@ -120,7 +124,7 @@ Config.HomeColors = {
 Config.DefaultHomeColor = "Coffee"
 
 Config.Waypoints = {
-	-- Guild Square anchors an organic village loop. Market Lane sits to the
+	-- Adventure Guild anchors an organic village loop. Market Lane sits to the
 	-- west, Family Lane to the east, and the park/lake form the quiet north end.
 	Town = Vector3.new(0, 4, 28),
 	Cafe = Vector3.new(-78, 4, -62),

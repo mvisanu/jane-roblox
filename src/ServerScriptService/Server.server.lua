@@ -25,10 +25,15 @@ local toast = Instance.new("RemoteEvent")
 toast.Name = RemoteNames.Toast
 toast.Parent = remoteFolder
 
+local guildAction = Instance.new("RemoteEvent")
+guildAction.Name = RemoteNames.GuildAction
+guildAction.Parent = remoteFolder
+
 local remotes = {
 	Request = request,
 	StateChanged = stateChanged,
 	Toast = toast,
+	GuildAction = guildAction,
 }
 
 local Services = script.Parent:WaitForChild("Services")

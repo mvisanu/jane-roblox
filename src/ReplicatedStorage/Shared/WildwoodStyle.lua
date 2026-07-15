@@ -73,6 +73,11 @@ WildwoodStyle.World = {
 	Soil = Color3.fromRGB(54, 39, 25), -- #362719
 	Water = Color3.fromRGB(79, 103, 96), -- #4F6760
 	WaterLight = Color3.fromRGB(130, 150, 138), -- #82968A
+	-- User-approved clear river pair. Kept separate from the muted architectural
+	-- water roles so changing the river does not recolour windows, flowers, UI,
+	-- café food or the River Warden outfit.
+	ClearWater = Color3.fromRGB(68, 169, 226), -- #44A9E2
+	ClearWaterLight = Color3.fromRGB(188, 235, 250), -- #BCEBFA
 	Window = Color3.fromRGB(217, 162, 90), -- #D9A25A
 	Lantern = Color3.fromRGB(240, 184, 90), -- #F0B85A
 	Glass = Color3.fromRGB(215, 187, 149), -- #D7BB95

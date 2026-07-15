@@ -45,6 +45,8 @@ APPROVED_ROLES = {
     "Soil": (54, 39, 25),
     "Water": (79, 103, 96),
     "WaterLight": (130, 150, 138),
+    "ClearWater": (68, 169, 226),
+    "ClearWaterLight": (188, 235, 250),
     "Window": (217, 162, 90),
     "Lantern": (240, 184, 90),
     "Glass": (215, 187, 149),
